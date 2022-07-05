@@ -14,7 +14,7 @@ def get_gcs_client(google_project: str) -> storage.Client:
         raise MissingEnvironmentVariableException(f"Must set GOOGLE_PROJECT env var")
     return storage.Client(project=google_project)
 
-def get_lb_client(api_key: str) -> labelbox.Client:
+def get_lb_client(api_key: str) -> Client:
     """
     Returns:
          labelbox client.
