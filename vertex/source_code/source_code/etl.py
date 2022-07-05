@@ -32,7 +32,7 @@ def etl_job(lb_client: Client, model_run_id: str, bucket: storage.Bucket):
     vertex_labels = process_labels_in_threadpool(process_label, labels, bucket)
     return "\n".join([json.dumps(label) for label in vertex_labels])
 
-def get_labels_for_model_run(client: Client, model_run_id: str, media_type: str:
+def get_labels_for_model_run(client: Client, model_run_id: str, media_type: str):
     """
     Args:
         client: Labelbox client used for fetching labels
