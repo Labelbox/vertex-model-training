@@ -1,1 +1,2 @@
 labelbox
+git+https://github.com/Labelbox/model-training-integrations.git#egg=training_lib&subdirectory=vertex/source_code
