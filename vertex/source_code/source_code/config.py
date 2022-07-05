@@ -4,12 +4,12 @@ from google.cloud import storage
 import time
 from source_code.errors import MissingEnvironmentVariableException
 
-def get_gcs_client() -> storage.Client:
+def get_gcs_client(google_project: str) -> storage.Client:
     """
     Returns:
         google cloud storage client.
     """
-    google_project = os.environ.get(google_project: str)
+    google_project = os.environ.get(google_project)
     if not google_project:
         raise MissingEnvironmentVariableException(f"Must set GOOGLE_PROJECT env var")
     return storage.Client(project=google_project)
