@@ -8,7 +8,7 @@ import os
 from io import BytesIO
 import json
 import requests
-from typing import Tuple, Optional, Callable
+from typing import Tuple, Optional, Callable, Dict
 from PIL.Image import Image, open as load_image, DecompressionBombError
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
