@@ -1,7 +1,7 @@
 import setuptools
 
 setuptools.setup(
-    name="source_code",
+    name="vertex",
     version="0.0.1",
     author="Labelbox",
     author_email="engineering@labelbox.com",
