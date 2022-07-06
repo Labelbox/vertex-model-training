@@ -9,7 +9,7 @@ def get_gcs_client() -> storage.Client:
     Returns:
         google cloud storage client.
     """
-    google_project = env_vars(google_project)
+    google_project = env_vars("google_project")
     if not google_project:
         raise MissingEnvironmentVariableException(f"Must set google_project env var")
     return storage.Client(project=google_project)
@@ -19,7 +19,7 @@ def get_lb_client() -> Client:
     Returns:
          labelbox client.
     """
-    api_key = env_vars(api_key)
+    api_key = env_vars("api_key")
     if not api_key:
         raise MissingEnvironmentVariableException(f"Must set api_key env var")    
     return Client(api_key=api_key, endpoint='https://api.labelbox.com/_gql', enable_experimental=True)
