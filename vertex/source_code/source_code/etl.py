@@ -41,8 +41,10 @@ def get_labels_for_model_run(client: Client, model_run_id: str, media_type: str)
     Returns:
         LabelGenerator with labels to-be-converted into vertex syntax    
     """
+    print("Initiating Label Export")
     model_run = client.get_model_run(model_run_id)
     json_labels = model_run.export_labels(download=True)
+    print("Label Export Complete")
     for row in json_labels:
         if media_type is not None:
             row['media_type'] = media_type
