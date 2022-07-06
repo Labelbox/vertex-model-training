@@ -95,7 +95,6 @@ def process_label(label: Label, bucket: storage.Bucket, downsample_factor = 2.) 
         'validation': 'validation'
     }    
     classifications = []
-    validate_label(label)
     image_bytes, _ = get_image_bytes(label.data.url, downsample_factor)
 
     for annotation in label.annotations:
