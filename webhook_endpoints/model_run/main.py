@@ -21,6 +21,6 @@ def model_run(request):
     gcs_key = create_gcs_key(model_run_id)
     etl_file = upload_ndjson_data(json_data, bucket, gcs_key)
     
-    print(f"ETL Complete. URI: %s", "{etl_file}")
+    print(f"ETL Complete. URI: {etl_file}")
 
     return "ETL Job"
