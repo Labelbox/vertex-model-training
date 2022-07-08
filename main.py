@@ -1,5 +1,9 @@
 def model_run(request):
     """
+    Environment Variables:
+        api_key         :       Labelbox API Key
+        gcs_bucket      :       Name of a GCS Bucket to-be-generated
+        google_project  :       Name of the google project this Cloud Function is in
     """
     import json
     from source_code.config import env_vars, create_gcs_key, get_lb_client, get_gcs_client
