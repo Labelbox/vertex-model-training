@@ -42,6 +42,8 @@ def model_run(request):
     import requests
     from source_code.config import env_vars
     
+    print("raph was here")
+    
     string = request.get_data()
     etl_url = env_vars("etl_url")
     requests.post(etl_url, data=string)
