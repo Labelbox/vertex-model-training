@@ -1,5 +1,6 @@
-def model_run(request):
+def etl(request):
     """
+    Receives an ETL webhook trigger and returns a vertex dataset
     Environment Variables:
         api_key         :       Labelbox API Key
         gcs_bucket      :       Name of a GCS Bucket to-be-generated
@@ -7,9 +8,10 @@ def model_run(request):
     """
     import json
     from source_code.config import env_vars, create_gcs_key, get_lb_client, get_gcs_client
-    from source_code.etl import etl_job, upload_ndjson_data
+    from source_code.etl import etl_job, upload_ndjson_data, create_vertex_dataset
     from labelbox import Client
     from google.cloud import storage
+    from google.cloud import aiplatform
     
     string = request.get_data()
     request_data = json.loads(string)
@@ -24,10 +26,28 @@ def model_run(request):
     json_data = etl_job(lb_client, model_run_id, bucket)
     gcs_key = create_gcs_key(model_run_id)
     etl_file = upload_ndjson_data(json_data, bucket, gcs_key)
+
+    vertex_dataset=create_vertex_dataset(model_run_id, etl_file)
     
-    print(f"ETL Complete. URI: {etl_file}")
+    print(f"ETL Complete")
 
     return "ETL Job"
+
+def model_run(request):
+    """
+    Reroutes the webhook trigger to the ETL function
+    Environment Variables:
+        etl_url         :           URL for the ETL Cloud Function Trigger
+    """
+    import json
+    import requests
+    from source_code.config import env_vars
+    
+    string = request.get_data()
+    etl_url = env_vars("etl_url")
+    requests.post(etl_url, data=string)
+
+    return "Rerouting to ETL"
 
 def models(request):
     """To-be-used in a Google Cloud Function.
