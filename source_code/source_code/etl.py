@@ -148,9 +148,15 @@ def get_image_bytes(image_url: str, downsample_factor = 1.) -> Optional[Tuple[Im
 
 @Retry()
 def _download_image(image_url: str) -> Image:
+    """
+    Downloads as a PIL Object
+    """
     return load_image(BytesIO(requests.get(image_url).content))
 
 def image_to_bytes(im: Image) -> BytesIO:
+    """
+    Converts a PIL Image into Bytes
+    """
     im_bytes = BytesIO()
     im.save(im_bytes, format="jpeg")
     im_bytes.seek(0)
@@ -180,6 +186,22 @@ def upload_image_to_gcs(image_bytes: BytesIO, data_row_id: str, bucket: storage.
     blob = bucket.blob(gcs_key)
     blob.upload_from_file(image_bytes, content_type="image/jpg")
     return f"gs://{bucket.name}/{blob.name}"
+
+def create_vertex_dataset(name: str, gcs_etl_file):
+    """
+    Converts an GCS ETL file (which is the result of creating a GCS Bucket for training data) into a Vertex Dataset.
+    Args:
+        name                    :           Name of the dataset in Vertex
+        gcs_source              :           ETL File
+        import_schema_uri       :           Tells vertex the kind of prediciton task is taking place In this case, it's a single label classification
+    Returns:
+        ImageDataset object
+    """
+    vertex_dataset = aiplatform.ImageDataset.create(display_name=model_run_id, 
+                                                    gcs_source=etl_file,
+                                                    import_schema_uri=aiplatform.schema.dataset.ioformat.image.single_label_classification)
+    return vertex_dataset
+    
 
 @Retry()
 def upload_ndjson_data(stringified_json : str, bucket: storage.Bucket, gcs_key : str) -> str:
