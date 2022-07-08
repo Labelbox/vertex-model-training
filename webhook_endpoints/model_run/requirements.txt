@@ -1,1 +1,0 @@
-git+https://github.com/Labelbox/vertex-model-training.git#egg=source_code&subdirectory=source_code
