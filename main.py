@@ -1,4 +1,4 @@
-def etl(request):
+def etl_function(request):
     """
     Receives an ETL webhook trigger and returns a vertex dataset
     Environment Variables:
@@ -26,7 +26,6 @@ def etl(request):
     json_data = etl_job(lb_client, model_run_id, bucket)
     gcs_key = create_gcs_key(model_run_id)
     etl_file = upload_ndjson_data(json_data, bucket, gcs_key)
-
     vertex_dataset=create_vertex_dataset(model_run_id, etl_file)
     
     print(f"ETL Complete")
