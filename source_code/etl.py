@@ -216,6 +216,7 @@ def upload_ndjson_data(stringified_json : str, bucket: storage.Bucket, gcs_key :
         bucket: Cloud storage bucket object
         gcs_key: cloud storage key (basically the file name)
     """
+    print('Uploading Converted Labels')
     blob = bucket.blob(gcs_key)
     blob.upload_from_string(stringified_json)
     return f"gs://{bucket.name}/{blob.name}"
