@@ -20,6 +20,8 @@ def etl_function(request):
     model_id = request_data['modelId']
     model_run_id = request_data['modelRunId']
     model_type = request_data['modelType']
+    
+    print(model_run_id)
 
     lb_client = get_lb_client()
     bucket = get_gcs_client().create_bucket(env_vars('gcs_bucket'), location = 'US-CENTRAL1')
