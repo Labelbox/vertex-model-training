@@ -61,6 +61,6 @@ def models(request):
     models_dict = {}
 
     for model in model_options:
-        return_value.update({model : []})
+        models_dict.update({model : []})
 
     return models_dict
