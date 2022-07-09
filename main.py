@@ -14,6 +14,7 @@ def etl_function(request):
     from google.cloud import aiplatform
     
     string = request.get_data()
+    print(string)
     request_data = json.loads(string)
 
     model_id = request_data['modelId']
