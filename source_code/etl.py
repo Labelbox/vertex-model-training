@@ -12,7 +12,6 @@ from typing import Tuple, Optional, Callable, Dict, Any, List
 from PIL.Image import Image, open as load_image, DecompressionBombError
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from google.cloud import aiplatform
-from tqdm import tqdm
 
 def etl_job(lb_client: Client, model_run_id: str, bucket: storage.Bucket):
     """
@@ -70,7 +69,7 @@ def process_labels_in_threadpool(process_fn: Callable[..., Dict[str, Any]],label
     print('Processing Labels')
     vertex_labels = []
     with ThreadPoolExecutor(max_workers=max_workers) as exc:
-        training_data_futures = (exc.submit(process_fn, label, *args) for label in tqdm(labels))
+        training_data_futures = (exc.submit(process_fn, label, *args) for label in labels)
         filter_count = {'labels' : 0,'data_rows' : 0}
         for future in as_completed(training_data_futures):
             try:
