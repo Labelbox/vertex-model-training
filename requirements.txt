@@ -1,3 +1,4 @@
 labelbox[data]
 google-cloud-storage
+google-api-core
 PILLOW
