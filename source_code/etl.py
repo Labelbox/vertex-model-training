@@ -204,6 +204,7 @@ def create_vertex_dataset(name: str, gcs_etl_file):
     vertex_dataset = aiplatform.ImageDataset.create(display_name=name, 
                                                     gcs_source=gcs_etl_file,
                                                     import_schema_uri=aiplatform.schema.dataset.ioformat.image.single_label_classification)
+    print('Created Vertex Dataset with name {name}')
     return vertex_dataset
     
 
@@ -219,4 +220,5 @@ def upload_ndjson_data(stringified_json : str, bucket: storage.Bucket, gcs_key :
     print('Uploading Converted Labels')
     blob = bucket.blob(gcs_key)
     blob.upload_from_string(stringified_json)
+    print('Upload Complete')
     return f"gs://{bucket.name}/{blob.name}"
