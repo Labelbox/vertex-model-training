@@ -11,6 +11,7 @@ import requests
 from typing import Tuple, Optional, Callable, Dict, Any, List
 from PIL.Image import Image, open as load_image, DecompressionBombError
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from google.cloud import aiplatform
 
 def etl_job(lb_client: Client, model_run_id: str, bucket: storage.Bucket):
     """
