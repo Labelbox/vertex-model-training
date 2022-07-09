@@ -12,6 +12,7 @@ from typing import Tuple, Optional, Callable, Dict, Any, List
 from PIL.Image import Image, open as load_image, DecompressionBombError
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from google.cloud import aiplatform
+from tqdm import tqdm
 
 def etl_job(lb_client: Client, model_run_id: str, bucket: storage.Bucket):
     """
@@ -66,9 +67,10 @@ def process_labels_in_threadpool(process_fn: Callable[..., Dict[str, Any]],label
     Returns:
         A list of results from the process_fn       
     """
+    print('Processing Labels')
     vertex_labels = []
     with ThreadPoolExecutor(max_workers=max_workers) as exc:
-        training_data_futures = (exc.submit(process_fn, label, *args) for label in labels)
+        training_data_futures = (exc.submit(process_fn, label, *args) for label in tqdm(labels))
         filter_count = {'labels' : 0,'data_rows' : 0}
         for future in as_completed(training_data_futures):
             try:
@@ -77,6 +79,7 @@ def process_labels_in_threadpool(process_fn: Callable[..., Dict[str, Any]],label
                 filter_count['data_rows'] += 1
             except InvalidLabelException as e:
                 filter_count['labels'] += 1
+    print('Label Processing Complete')                
     return vertex_labels
 
 def process_label(label: Label, bucket: storage.Bucket, downsample_factor = 2.) -> Dict[str, Any]:
@@ -198,6 +201,7 @@ def create_vertex_dataset(name: str, gcs_etl_file):
     Returns:
         ImageDataset object
     """
+    print('Creating Vertex Dataset')
     vertex_dataset = aiplatform.ImageDataset.create(display_name=model_run_id, 
                                                     gcs_source=etl_file,
                                                     import_schema_uri=aiplatform.schema.dataset.ioformat.image.single_label_classification)
