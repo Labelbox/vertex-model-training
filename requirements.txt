@@ -1,4 +1,5 @@
 labelbox[data]
 google-cloud-storage
 google-api-core
+google-cloud-aiplatform
 PILLOW
