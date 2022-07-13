@@ -1,5 +1,6 @@
 def train_function(request):
     
+    import json
     from source_code.config import env_vars    
     from source_code.etl import create_vertex_dataset
     from source_code.train import create_autoML_training_job
