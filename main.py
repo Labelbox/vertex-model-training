@@ -6,7 +6,12 @@ def train_function(request):
     from source_code.train import create_autoML_training_job
     
     string = request.get_data()
+    
+    print(string)
+    
     request_data = json.loads(string)
+    
+    print(request_data)    
     
     model_name = env_vars('model_name')
     
@@ -42,7 +47,12 @@ def etl_function(request):
     print("Initiating ETL")
     
     string = request.get_data()
+    
+    print(string)
+    
     request_data = json.loads(string)
+    
+    print(request_data)    
 
     model_id = request_data['modelId']
     model_run_id = request_data['modelRunId']
