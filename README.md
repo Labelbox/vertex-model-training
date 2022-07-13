@@ -25,13 +25,13 @@ Labelbox is designed to integrate with any Model Training or Pipeline backend.  
 ### How it works
 Once the integration is set up, a model training sequence works as follows: 
 
-1	Initiate Model Training: User clicks "Train Model" from Model Runs Page
-2	Webhook Action Fired: Labelbox Model Run webhook is triggered.  The webhook calls Google Cloud Function.  Labelbox provides a sample Google Cloud Function (WIP) to give customers a fast "Hello World"
-3	Webhook ETL: The webhook callback calls Labelbox SDK to export data from the model run.  The data is then translated from Labelbox Format to VertexAI format and loadedd to Vertex as a Vertex AI Dataset. 
-4	Webhook Launch Model Training: VertexAI API is called to initiate the Model Training Job
-5	Webhook Polling Model Training Job: Webhook checks periodically for Model Training completion
-6	Webhook Inference on Test/Train splits: When model training is done, the trained model is invoked to run inference on the test/validate data splits
-7	Webhook Load results to Labelbox: Webhook handles calls Lablebox SDK to load test/validate inference and diagnostics enabling Labelbox's detailed visual model run analaysis
+1)	Initiate Model Training: User clicks "Train Model" from Model Runs Page
+2)	Webhook Action Fired: Labelbox Model Run webhook is triggered.  The webhook calls Google Cloud Function.  Labelbox provides a sample Google Cloud Function (WIP) to give customers a fast "Hello World"
+3)	Webhook ETL: The webhook callback calls Labelbox SDK to export data from the model run.  The data is then translated from Labelbox Format to VertexAI format and loadedd to Vertex as a Vertex AI Dataset. 
+4)	Webhook Launch Model Training: VertexAI API is called to initiate the Model Training Job
+5)	Webhook Polling Model Training Job: Webhook checks periodically for Model Training completion
+6)	Webhook Inference on Test/Train splits: When model training is done, the trained model is invoked to run inference on the test/validate data splits
+7)	Webhook Load results to Labelbox: Webhook handles calls Lablebox SDK to load test/validate inference and diagnostics enabling Labelbox's detailed visual model run analaysis
 
 ### Set up and Hello World
 (Steps TBD)
