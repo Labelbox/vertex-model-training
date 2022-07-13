@@ -1,3 +1,26 @@
+def train_function(request):
+    
+    from source_code.config import env_vars    
+    from source_code.etl import create_vertex_dataset
+    from source_code.train import create_autoML_training_job
+    
+    string = request.get_data()
+    request_data = json.loads(string)
+    
+    model_name = env_vars('model_name')
+    
+    model_run_id = list(request_data.keys())[0]
+    etl_file = list(request_data.values())[0]
+
+    vertex_dataset = create_vertex_dataset(model_run_id, etl_file)
+    vertex_model, vertex_model_id = create_autoML_training_job(model_name, vertex_dataset, model_run_id)
+    
+    print(f'Vertex Model ID: {vertex_model_id}')
+    
+    print(f'Vertex Model: {vertex_model}')
+    
+    return "Train Job"
+
 def etl_function(request):
     """
     Receives an ETL webhook trigger and returns a vertex dataset
@@ -8,14 +31,16 @@ def etl_function(request):
     """
     import json
     from source_code.config import env_vars, create_gcs_key, get_lb_client, get_gcs_client
-    from source_code.etl import etl_job, upload_ndjson_data, create_vertex_dataset
-    from source_code.train import create_autoML_training_job
+    from source_code.etl import etl_job, upload_ndjson_data
+
     from labelbox import Client
     from google.cloud import storage
     from google.cloud import aiplatform
+    import requests
+    
+    print("Initiating ETL")
     
     string = request.get_data()
-    print(string)
     request_data = json.loads(string)
 
     model_id = request_data['modelId']
@@ -30,11 +55,14 @@ def etl_function(request):
     json_data = etl_job(lb_client, model_run_id, bucket)
     gcs_key = create_gcs_key(model_run_id)
     etl_file = upload_ndjson_data(json_data, bucket, gcs_key)
-    vertex_dataset = create_vertex_dataset(model_run_id, etl_file)
     
-    vertex_model, vertex_model_id = create_autoML_training_job("test_model", vertex_dataset, model_run_id)
+    print(f'ETL File: {etl_file}')
     
-    print(vertex_model_id)
+    train_url = env_vars("train_url")
+    
+    post_string = str({model_run_id : etl_file})
+    
+    requests.post(train_url, data=post_string)
     
     print(f"ETL Complete. Training Job Initiated.")
 
