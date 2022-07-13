@@ -1,6 +1,6 @@
 from google.cloud import aiplatform
 
-def create_autoML_training_job(name: str, vertex_dataset_id, model_run_id):
+def create_autoML_training_job(name: str, vertex_dataset, model_run_id):
   
   vertex_model_id = str("model-") +cr str(model_run_id)
   
@@ -12,7 +12,7 @@ def create_autoML_training_job(name: str, vertex_dataset_id, model_run_id):
   )
   
   model = job.run(
-    dataset = aiplatform.ImageDataset(vertex_dataset_id),
+    dataset = vertex_dataset,
     sync = False,
     model_id = vertex_model_id,
     model_display_name = name,
