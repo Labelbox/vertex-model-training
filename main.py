@@ -71,7 +71,7 @@ def etl_function(request):
     
     train_url = env_vars("train_url")
     
-    post_string = str({model_run_id : etl_file})
+    post_string = {str(model_run_id) : str(etl_file)}
     
     requests.post(train_url, data=post_string)
     
