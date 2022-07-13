@@ -9,6 +9,7 @@ def etl_function(request):
     import json
     from source_code.config import env_vars, create_gcs_key, get_lb_client, get_gcs_client
     from source_code.etl import etl_job, upload_ndjson_data, create_vertex_dataset
+    from source_code.train import create_autoML_training_job
     from labelbox import Client
     from google.cloud import storage
     from google.cloud import aiplatform
@@ -29,9 +30,13 @@ def etl_function(request):
     json_data = etl_job(lb_client, model_run_id, bucket)
     gcs_key = create_gcs_key(model_run_id)
     etl_file = upload_ndjson_data(json_data, bucket, gcs_key)
-    vertex_dataset=create_vertex_dataset(model_run_id, etl_file)
+    vertex_dataset = create_vertex_dataset(model_run_id, etl_file)
     
-    print(f"ETL Complete")
+    vertex_model, vertex_model_id = create_autoML_training_job("test_model", vertex_dataset, model_run_id)
+    
+    print(vertex_model_id)
+    
+    print(f"ETL Complete. Training Job Initiated.")
 
     return "ETL Job"
 
