@@ -2,7 +2,7 @@ from google.cloud import aiplatform
 
 def create_autoML_training_job(name: str, vertex_dataset, model_run_id):
   
-  vertex_model_id = str("model-") +cr str(model_run_id)
+  vertex_model_id = str("model-") + str(model_run_id)
   
   job = aiplatform.AutoMLImageTrainingJob(
     display_name = name,
