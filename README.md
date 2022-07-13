@@ -1,6 +1,6 @@
 # vertex-model-training
 
-This repository is a one stop shop for integrating Labelbox with a model Training backend on Google VertexAI.  
+This repository is a one stop shop for integrating Labelbox with a model Training backend on Google VertexAI (AutoML).  
 
 ### Background
 Labelbox is designed to integrate with any Model Training or Pipeline backend.  Whether or not your existing backend supports an Active Learning lifecycle, Labelbox integration can improve your training data MLDLC by adding the following features:
@@ -15,6 +15,8 @@ Labelbox is designed to integrate with any Model Training or Pipeline backend.  
 - Integrates with MLDLC and CI/CD pipelines
 - Data discovery with Catalog: Loal all historical Model inference to Labelbox. The seamkess integration integrated, so that they get teh biggest model improvement for their $/effort/time
 
+### Data Modality
+Image Object Detection
 
 ### Dependencies: 
 - [Labelbox SDK/Webhooks](https://docs.labelbox.com/docs/webhooks)  
