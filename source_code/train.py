@@ -1,6 +1,8 @@
-https://cloud.google.com/vertex-ai/docs/training/automl-api#aiplatform_create_training_pipeline_image_classification_sample-python
+from google.cloud import aiplatform
 
-def create_autoML_training_job(name: str, vertex_dataset_id):
+def create_autoML_training_job(name: str, vertex_dataset_id, model_run_id):
+  
+  vertex_model_id = str("model-") +cr str(model_run_id)
   
   job = aiplatform.AutoMLImageTrainingJob(
     display_name = name,
@@ -11,6 +13,8 @@ def create_autoML_training_job(name: str, vertex_dataset_id):
   
   model = job.run(
     dataset = aiplatform.ImageDataset(vertex_dataset_id),
+    sync = False,
+    model_id = vertex_model_id,
     model_display_name = name,
     budget_milli_node_hours = 20000,
     training_filter_split = "labels.aiplatform.googleapis.com/ml_use=training",
@@ -18,4 +22,4 @@ def create_autoML_training_job(name: str, vertex_dataset_id):
     test_filter_split = "labels.aiplatform.googleapis.com/ml_use=test"
   )
   
-  model.wait()
+  return model, vertex_model_id
