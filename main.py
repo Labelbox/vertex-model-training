@@ -4,7 +4,7 @@ def monitor_function(request):
     
     job_name = env_vars("job_name")
     
-    training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name="job_name"')[0]
+    training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name={job_name}')[0]
     
     try:
         print('Use parenthesis')
