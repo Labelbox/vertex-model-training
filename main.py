@@ -1,30 +1,22 @@
 def train_function(request):
-    
     import json
     from source_code.config import env_vars    
     from source_code.etl import create_vertex_dataset
     from source_code.train import create_autoML_training_job
     
-    string = request.get_data()
-    
-    print(string)
-    
-    request_data = json.loads(string)
-    
-    print(request_data)    
+    request_bytes = request.get_data()
+    request_json_bytes = bytes.decode('utf8').replace("'", '"')
+    request_json = json.loads(request_json)   
+    model_run_id = list(request_json.keys())[0]
+    etl_file = list(request_json.values())[0]    
     
     model_name = env_vars('model_name')
-    
-    model_run_id = list(request_data.keys())[0]
-    etl_file = list(request_data.values())[0]
 
     vertex_dataset = create_vertex_dataset(model_run_id, etl_file)
     vertex_model, vertex_model_id = create_autoML_training_job(model_name, vertex_dataset, model_run_id)
     
     print(f'Vertex Model ID: {vertex_model_id}')
-    
     print(f'Vertex Model: {vertex_model}')
-    
     return "Train Job"
 
 def etl_function(request):
