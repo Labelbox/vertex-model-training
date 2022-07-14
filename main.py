@@ -71,7 +71,7 @@ def etl_function(request):
     gcs_key = create_gcs_key(model_run_id)
     etl_file = upload_ndjson_data(json_data, bucket, gcs_key)
     print(f'ETL File: {etl_file}')
-    post_dict {
+    post_dict = {
         "model_run_id" : model_run_id,
         "etl_file" : etl_file,
         "api_key" : env_vars("api_key"),
