@@ -5,8 +5,11 @@ def train_function(request):
     from source_code.train import create_autoML_training_job
     
     request_bytes = request.get_data()
+    print(request_bytes)
+    
     request_json_bytes = bytes.decode('utf8').replace("'", '"')
     request_json = json.loads(request_json)   
+    
     model_run_id = list(request_json.keys())[0]
     etl_file = list(request_json.values())[0]    
     
@@ -17,6 +20,7 @@ def train_function(request):
     
     print(f'Vertex Model ID: {vertex_model_id}')
     print(f'Vertex Model: {vertex_model}')
+    
     return "Train Job"
 
 def etl_function(request):
@@ -38,19 +42,15 @@ def etl_function(request):
     
     print("Initiating ETL")
     
-    string = request.get_data()
+    request_bytes = request.get_data()
+    print(request_bytes)
     
-    print(string)
-    
-    request_data = json.loads(string)
-    
-    print(request_data)    
+    request_json = json.loads(request_bytes)
+    print(request_json)    
 
-    model_id = request_data['modelId']
-    model_run_id = request_data['modelRunId']
-    model_type = request_data['modelType']
-    
-    print(model_run_id)
+    model_id = request_json['modelId']
+    model_run_id = request_json['modelRunId']
+    model_type = request_json['modelType']
 
     lb_client = get_lb_client()
     bucket = get_gcs_client().create_bucket(env_vars('gcs_bucket'), location = 'US-CENTRAL1')
@@ -61,11 +61,9 @@ def etl_function(request):
     
     print(f'ETL File: {etl_file}')
     
+    post_bytes = json.dumps({str(model_run_id) : str(etl_file)}).encode('utf-8')
     train_url = env_vars("train_url")
-    
-    post_string = {str(model_run_id) : str(etl_file)}
-    
-    requests.post(train_url, data=post_string)
+    requests.post(train_url, data=post_bytes)
     
     print(f"ETL Complete. Training Job Initiated.")
 
