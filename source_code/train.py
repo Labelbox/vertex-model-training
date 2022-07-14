@@ -6,7 +6,7 @@ def create_autoML_training_job(name: str, vertex_dataset, model_run_id):
   
   job = aiplatform.AutoMLImageTrainingJob(
     display_name = name,
-    prediction = "classification",
+    prediction_type = "classification",
     multi_label = False,
     model_type = "MOBILE_TF_VERSATILE_1"
   )
