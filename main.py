@@ -1,3 +1,34 @@
+def monitor_function(request):
+    from google.cloud import aiplatform
+    from google.cloud.aiplatform.compat.types.gca_pipeline_state import PipelineState
+    from source_code.config import env_vars 
+    
+    job_name = env_vars("job_name")
+    
+    training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name="job_name"')[0]
+    
+    try:
+        print('Use parenthesis')
+        x = training_job.state()
+    except:
+        print('Dont')   
+        x = training_job.state
+    
+    completed_states = [
+        PipelineState.PIPELINE_STATE_SUCCEEDED,
+        PipelineState.PIPELINE_STATE_FAILED,
+        PipelineState.PIPELINE_STATE_CANCELLED,
+        PipelineState.PIPELINE_STATE_PAUSED,     
+    ]
+    
+    if x in completed_states:
+        print('Training compete, send to inference')
+    else:
+        print('Training incomplete, will check again in X minutes')
+    
+    return "Monitor Job"
+    
+
 def train_function(request):
     import json
     from source_code.config import env_vars    
