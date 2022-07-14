@@ -1,6 +1,5 @@
 def monitor_function(request):
     from google.cloud import aiplatform
-    from google.cloud.aiplatform.compat.types.pipeline_state import PipelineState
     from source_code.config import env_vars 
     
     job_name = env_vars("job_name")
@@ -9,16 +8,16 @@ def monitor_function(request):
     
     try:
         print('Use parenthesis')
-        x = training_job.state()
+        x = str(training_job.state())
     except:
         print('Dont')   
-        x = training_job.state
+        x = str(training_job.state)
     
     completed_states = [
-        PipelineState.PIPELINE_STATE_SUCCEEDED,
-        PipelineState.PIPELINE_STATE_FAILED,
-        PipelineState.PIPELINE_STATE_CANCELLED,
-        PipelineState.PIPELINE_STATE_PAUSED,     
+        "PipelineState.PIPELINE_STATE_SUCCEEDED",
+        "PipelineState.PIPELINE_STATE_FAILED",
+        "PipelineState.PIPELINE_STATE_CANCELLED",
+        "PipelineState.PIPELINE_STATE_PAUSED",     
     ]
     
     if x in completed_states:
