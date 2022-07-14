@@ -9,7 +9,7 @@ def monitor_function(request):
     
     time.sleep(300)
     
-    training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name={request_json['job_name']}')[0]
+    training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name={request_json["job_name"]}')[0]
     
     job_state = str(training_job.state)
     
