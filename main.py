@@ -1,6 +1,6 @@
 def monitor_function(request):
     from google.cloud import aiplatform
-    from google.cloud.aiplatform.compat.types.gca_pipeline_state import PipelineState
+    from google.cloud.aiplatform.compat.types.pipeline_state import PipelineState
     from source_code.config import env_vars 
     
     job_name = env_vars("job_name")
