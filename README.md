@@ -35,7 +35,7 @@ Once the integration is set up, a model training sequence works as follows:
 6)	Webhook Inference on Test/Train splits: When model training is done, the trained model is invoked to run inference on the test/validate data splits
 7)	Webhook Load results to Labelbox: Webhook handles calls Lablebox SDK to load test/validate inference and diagnostics enabling Labelbox's detailed visual model run analaysis
 
-### Set up and Hello World
+### How to set up in your own Labelbox / GCP envirionment
 (Steps TBD)
 
 
