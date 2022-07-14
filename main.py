@@ -7,8 +7,8 @@ def train_function(request):
     request_bytes = request.get_data()
     print(request_bytes)
     
-    request_json_bytes = bytes.decode('utf8').replace("'", '"')
-    request_json = json.loads(request_json)   
+    request_json = json.loads(request_bytes)
+    print(request_json)
     
     model_run_id = list(request_json.keys())[0]
     etl_file = list(request_json.values())[0]    
