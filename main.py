@@ -2,6 +2,7 @@ def monitor_function(request):
     import json
     import time
     from google.cloud import aiplatform
+    import requests
     from source_code.config import env_vars 
 #     request_bytes = request.get_data()
 #     request_json = json.loads(request_bytes)
