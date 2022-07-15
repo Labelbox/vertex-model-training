@@ -6,7 +6,7 @@ def monitor_function(request):
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
     time.sleep(500)
-    training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name={request_json["model_name"]}')[0]
+    training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name={env_vars("model_name")}')[0]
     job_state = str(training_job.state)
     completed_states = [
         "PipelineState.PIPELINE_STATE_SUCCEEDED",
@@ -14,12 +14,15 @@ def monitor_function(request):
         "PipelineState.PIPELINE_STATE_CANCELLED",
         "PipelineState.PIPELINE_STATE_PAUSED",     
     ]
+    
+    print(job_state)
+    
     if job_state in completed_states:
         print('Training compete, send to inference')
         # requests.post(monitor_url, data=request_bytes)
     else:
         print('Training incomplete, will check again in 5 minutes')
-        requests.post(request_json['monitor_url'], data=request_bytes)
+        requests.post(env_vars('monitor_url'), data=request_bytes)
     return "Monitor Job"
 
 def train_function(request):
