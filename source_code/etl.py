@@ -204,7 +204,7 @@ def create_vertex_dataset(name: str, gcs_etl_file):
     vertex_dataset = aiplatform.ImageDataset.create(display_name=name, 
                                                     gcs_source=gcs_etl_file,
                                                     import_schema_uri=aiplatform.schema.dataset.ioformat.image.single_label_classification)
-    print('Created Vertex Dataset with name {name}')
+    print(f'Created Vertex Dataset with name {name}')
     return vertex_dataset
     
 
