@@ -11,17 +11,18 @@ def monitor_function(request):
     job_state = str(training_job.state)
     
     completed_states = [
-        "PipelineState.PIPELINE_STATE_SUCCEEDED",
         "PipelineState.PIPELINE_STATE_FAILED",
         "PipelineState.PIPELINE_STATE_CANCELLED",
-        "PipelineState.PIPELINE_STATE_PAUSED",     
+        "PipelineState.PIPELINE_STATE_PAUSED" 
     ]
     
     print(job_state)
     
-    if job_state in completed_states:
+    if job_state == "PipelineState.PIPELINE_STATE_SUCCEEDED":
         print('Training compete, send to inference')
         # requests.post(monitor_url, data=request_bytes)
+    elif job_state in completed_states:
+        print("Training failed, terminating deployment")
     else:
         print('Training incomplete, will check again in 5 minutes')
         requests.post(env_vars('monitor_url'), data=request_bytes)
