@@ -5,7 +5,7 @@ def monitor_function(request):
     from source_code.config import env_vars 
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
-    time.sleep(400)
+    time.sleep(500)
     training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name={request_json["model_name"]}')[0]
     job_state = str(training_job.state)
     completed_states = [
@@ -36,7 +36,7 @@ def train_function(request):
     vertex_dataset = create_vertex_dataset(request_json['model_run_id'], request_json['etl_file'])
     requests.post(request_json['monitor_url'], data=request_bytes)    
     vertex_model, vertex_model_id = create_autoML_training_job(request_json['model_name'], vertex_dataset, request_json['model_run_id'])
-    print(f'Training Job Name: {model_name}')
+    print(f"Training Job Name: {request_json['model_name']}")
     print(f'Vertex Model ID: {vertex_model_id}')
     return "Train Job"
 
