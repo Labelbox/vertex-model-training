@@ -5,7 +5,7 @@ def monitor_function(request):
     from source_code.config import env_vars 
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
-    time.sleep(300)
+    time.sleep(400)
     training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name={request_json["model_name"]}')[0]
     job_state = str(training_job.state)
     completed_states = [
