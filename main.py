@@ -3,11 +3,12 @@ def monitor_function(request):
     import time
     from google.cloud import aiplatform
     from source_code.config import env_vars 
-    request_bytes = request.get_data()
-    request_json = json.loads(request_bytes)
+#     request_bytes = request.get_data()
+#     request_json = json.loads(request_bytes)
     time.sleep(500)
     training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name={env_vars("model_name")}')[0]
     job_state = str(training_job.state)
+    
     completed_states = [
         "PipelineState.PIPELINE_STATE_SUCCEEDED",
         "PipelineState.PIPELINE_STATE_FAILED",
