@@ -21,7 +21,6 @@ def monitor_function(request):
         print('Training incomplete, will check again in 5 minutes')
         requests.post(request_json['monitor_url'], data=request_bytes)
     return "Monitor Job"
-    
 
 def train_function(request):
     """
