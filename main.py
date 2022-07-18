@@ -11,7 +11,7 @@ def inference_function(request):
     
     lb_client = Client(request_json['lb_api_key'])
     
-    training_job = aiplatform.models.list(filter=f'display_name={request_json["model_name"]}')[0]
+    training_job = aiplatform.Model.list(filter=f'display_name={request_json["model_name"]}')[0]
     
     prediction_job = batch_predict(request_json['etl_file'], model, request_json['lb_model_run_id'], model_type)
     
