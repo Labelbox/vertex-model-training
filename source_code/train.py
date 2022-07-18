@@ -15,7 +15,7 @@ def create_autoML_training_job(model_name: str, vertex_dataset, model_run_id):
     dataset = vertex_dataset,
     sync = False,
     model_id = vertex_model_id,
-    model_display_name = vertex_model_id,
+    model_display_name = model_name,
     budget_milli_node_hours = 20000,
     training_filter_split = "labels.aiplatform.googleapis.com/ml_use=training",
     validation_filter_split = "labels.aiplatform.googleapis.com/ml_use=validation",
