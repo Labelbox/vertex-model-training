@@ -3,16 +3,19 @@ def inference_function(request):
     import uuid
     from labelbox import Client
     from labelbox.data.serialization import NDJsonConverter
-    from source_code.inference import batch_predict, get_options, process_predictions, export_model_run_labels, compute_metrics    
+    from source_code.inference import batch_predict, get_options, process_predictions, export_model_run_labels, compute_metrics   
+    from google.cloud import aiplatform
 
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
     
     lb_client = Client(request_json['lb_api_key'])
     
-    prediction_job = batch_predict(request_json['etl_file'], model, job_name, model_type)
+    training_job = aiplatform.models.list(filter=f'display_name={request_json["model_name"]}')[0]
     
-    model_run = lb_client._get_single(request_json['model_run_id'])
+    prediction_job = batch_predict(request_json['etl_file'], model, request_json['lb_model_run_id'], model_type)
+    
+    model_run = lb_client._get_single(request_json['lb_model_run_id'])
     
     options = get_options(model_run.model_id)
     
@@ -20,7 +23,7 @@ def inference_function(request):
     
     predictions = list(NDJsonConverter.deserialize(annotation_data))
     
-    labels = export_model_run_labels(lb_client, model_run_id, 'image')
+    labels = export_model_run_labels(lb_client, request_json['lb_model_run_id'], 'image')
     
     compute_metrics(labels, predictions, options)
     
@@ -71,9 +74,9 @@ def train_function(request):
     from source_code.train import create_autoML_training_job
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
-    vertex_dataset = create_vertex_dataset(request_json['model_run_id'], request_json['etl_file'])
-    requests.post(env_vars('monitor_url'), data=request_bytes)    
-    vertex_model, vertex_model_id = create_autoML_training_job(request_json['model_name'], vertex_dataset, request_json['model_run_id'])
+    vertex_dataset = create_vertex_dataset(request_json['lb_model_run_id'], request_json['etl_file'])
+    requests.post(env_vars('monitor_url'), data=request_bytes)
+    vertex_model, vertex_model_id = create_autoML_training_job(request_json['model_name'], vertex_dataset, request_json['lb_model_run_id'])
     print(f"Training Job Name: {request_json['model_name']}")
     print(f'Vertex Model ID: {vertex_model_id}')
     return "Train Job"
