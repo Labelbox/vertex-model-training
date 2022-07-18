@@ -48,7 +48,8 @@ def monitor_function(request):
     completed_states = [
         "PipelineState.PIPELINE_STATE_FAILED",
         "PipelineState.PIPELINE_STATE_CANCELLED",
-        "PipelineState.PIPELINE_STATE_PAUSED" 
+        "PipelineState.PIPELINE_STATE_PAUSED",
+        "PipelineState.PIPELINE_STATE_CANCELLING"
     ]
     
     print(job_state)
