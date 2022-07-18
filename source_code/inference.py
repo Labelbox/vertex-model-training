@@ -48,10 +48,10 @@ def export_model_run_labels(lb_client, model_run_id, media_type: Union[Literal['
     return LBV1Converter.deserialize(contents)
 
 def process_predictions(batch_prediction_job, options):
-  """
-  Nested Functions:
+    """
+    Nested Functions:
     build_radio_ndjson
-  """
+    """
     annotation_data = []
     for batch in batch_prediction_job.iter_outputs():
         for prediction_data in ndjson.loads(batch.download_as_string()):
