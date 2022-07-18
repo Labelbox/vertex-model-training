@@ -1,21 +1,31 @@
 def inference_function(request):
     import json
+    import uuid
     from labelbox import Client
+    from labelbox.data.serialization import NDJsonConverter
     from source_code.inference import batch_predict, get_options, process_predictions, export_model_run_labels, compute_metrics    
 
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
+    
     lb_client = Client(request_json['lb_api_key'])
-    prediction_job = batch_predict(etl_file, model, job_name, model_type)
+    
+    prediction_job = batch_predict(request_json['etl_file'], model, job_name, model_type)
+    
     model_run = lb_client._get_single(request_json['model_run_id'])
+    
     options = get_options(model_run.model_id)
+    
     annotation_data = process_predictions(prediction_job, options)
+    
     predictions = list(NDJsonConverter.deserialize(annotation_data))
+    
     labels = export_model_run_labels(lb_client, model_run_id, 'image')
-    metrics = compute_metrics(labels, predictions, options)
-    upload_task = model_run.add_predictions(
-      f'diagnostics-import-{uuid.uuid4()}',
-       NDJsonConverter.serialize(predictions))
+    
+    compute_metrics(labels, predictions, options)
+    
+    upload_task = model_run.add_predictions(f'diagnostics-import-{uuid.uuid4()}', NDJsonConverter.serialize(predictions))
+    
     upload_task.wait_until_done()
     
     return "Inference Job"
@@ -26,10 +36,10 @@ def monitor_function(request):
     from google.cloud import aiplatform
     import requests
     from source_code.config import env_vars 
-#     request_bytes = request.get_data()
-#     request_json = json.loads(request_bytes)
+    request_bytes = request.get_data()
+    request_json = json.loads(request_bytes)
     time.sleep(500)
-    training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name={env_vars("model_name")}')[0]
+    training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name={request_json["model_name"]}')[0]
     job_state = str(training_job.state)
     
     completed_states = [
@@ -42,12 +52,12 @@ def monitor_function(request):
     
     if job_state == "PipelineState.PIPELINE_STATE_SUCCEEDED":
         print('Training compete, send to inference')
-        # requests.post(monitor_url, data=request_bytes)
+        requests.post(env_vars("inference_url"), data=request_bytes)
     elif job_state in completed_states:
         print("Training failed, terminating deployment")
     else:
         print('Training incomplete, will check again in 5 minutes')
-        requests.post(env_vars('monitor_url'), data=request_bytes)
+        requests.post(env_vars("monitor_url"), data=request_bytes)
     return "Monitor Job"
 
 def train_function(request):
@@ -62,7 +72,7 @@ def train_function(request):
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
     vertex_dataset = create_vertex_dataset(request_json['model_run_id'], request_json['etl_file'])
-    requests.post(request_json['monitor_url'], data=request_bytes)    
+    requests.post(env_vars('monitor_url'), data=request_bytes)    
     vertex_model, vertex_model_id = create_autoML_training_job(request_json['model_name'], vertex_dataset, request_json['model_run_id'])
     print(f"Training Job Name: {request_json['model_name']}")
     print(f'Vertex Model ID: {vertex_model_id}')
@@ -99,17 +109,15 @@ def etl_function(request):
     etl_file = upload_ndjson_data(json_data, bucket, gcs_key)
     print(f'ETL File: {etl_file}')
     post_dict = {
-        "model_run_id" : model_run_id,
+        "lb_model_id" : model_id,
+        "lb_model_run_id" : model_run_id,
         "etl_file" : etl_file,
-        "api_key" : env_vars("api_key"),
+        "lb_api_key" : env_vars("api_key"),
         "google_project" : env_vars("google_project"),
-        "train_url" : env_vars("train_url"),
-        "monitor_url" : env_vars("monitor_url"),
-        "inference_url" : env_vars("inference_url"),
         "model_name" : env_vars("model_name")
     }
     post_bytes = json.dumps(post_dict).encode('utf-8')
-    requests.post(post_dict['train_url'], data=post_bytes)
+    requests.post(env_vars('train_url'), data=post_bytes)
     print(f"ETL Complete. Training Job Initiated.")
     return "ETL Job"
 
