@@ -156,7 +156,7 @@ def etl_function(request):
         "etl_file" : etl_file,
         "lb_api_key" : env_vars("api_key"),
         "google_project" : env_vars("google_project"),
-        "model_name" : env_vars("model_name")
+        "model_name" : env_vars("model_name"),
         "train_url" : env_vars('train_url'),
         "monitor_url" : env_vars('monitor_url'),
         "inference_url" : env_vars('inference_url')
