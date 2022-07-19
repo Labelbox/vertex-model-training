@@ -33,9 +33,10 @@ def inference_function(request):
     labels = export_model_run_labels(lb_client, lb_model_run_id, 'image')
     print('Computing metrics.')    
     predictions_with_metrics = compute_metrics(labels, predictions, options)
+    print(predictions_with_metrics[0])
     print('Metrics computed. Uploading predictions and metrics to model run.')   
     upload_task = model_run.add_predictions(f'diagnostics-import-{uuid.uuid4()}', NDJsonConverter.serialize(predictions_with_metrics))
-    upload_task.wait_until_done()
+    upload_task.errors
     print('Inference job complete.')
     
     return "Inference Job"
