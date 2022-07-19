@@ -137,7 +137,7 @@ def build_inference_file(bucket_name : str, key: str) -> str:
     blob.upload_from_string(data=ndjson.dumps(prediction_inputs), content_type="application/jsonl")
     return f"gs://{bucket.name}/{blob.name}"
 
-def parse_uri(self, etl_file):
+def parse_uri(etl_file):
     parts = etl_file.replace("gs://", "").split("/")
     bucket_name, key = parts[0], "/".join(parts[1:])
     return bucket_name, key
