@@ -18,7 +18,8 @@ def inference_function(request):
     lb_client = Client(lb_api_key)
     
     model = aiplatform.Model.list(filter=f'display_name={model_name}')[0]
-    prediction_job = batch_predict(etl_file, model, lb_model_run_id, "radio")
+#     prediction_job = batch_predict(etl_file, model, lb_model_run_id, "radio")
+    prediction_job = aiplatform.jobs.BatchPredictionJob.list(filter=f'display_name={lb_model_run_id}')[0]
     print('Predictions generated. Converting predictions into Labelbox format.')
     model_run = lb_client._get_single(ModelRun, lb_model_run_id)
     options = get_options(model_run.model_id)
