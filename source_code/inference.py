@@ -1,17 +1,22 @@
-from labelbox.data.serialization import LBV1Converter, NDJsonConverter
-from labelbox.data.metrics.group import get_label_pairs
-from labelbox.data.metrics import feature_miou_metric, feature_confusion_matrix_metric
 import requests
 import uuid
 import ndjson
 import time
-from google.cloud import storage
-from google.cloud import aiplatform
+from labelbox.data.serialization import LBV1Converter, NDJsonConverter
+from labelbox.data.metrics.group import get_label_pairs
+from labelbox.data.metrics import feature_miou_metric, feature_confusion_matrix_metric
+from google.cloud import storage, aiplatform
 
 def compute_metrics(labels, predictions, options):
-    """
+    """ Computes metrics and adds metric values to predictions to-be-uploaded to Labelbox
+    Args:
+        labels      :       List of NDJSON ground truth labels from a model run
+        predictions :       List of NDJSON prediction labels from a ETL'ed prediction job
+        options     :       A dictionary where you can lookup the name of an option given the schemaId
+    Returns:
+        The same prediction list passed in with metrics attached, ready to-be-uploaded to a model run
     Nested Function:
-      add_name_to_annotation
+        add_name_to_annotation()
     """
     predictions_with_metrics = []
     pairs = get_label_pairs(labels, predictions, filter_mismatch=True)
@@ -28,11 +33,26 @@ def compute_metrics(labels, predictions, options):
     return predictions_with_metrics
 
 def add_name_to_annotation(annotation, options):
+    """ Computes metrics and adds metric values to predictions to-be-uploaded to Labelbox
+    Args:
+        annotation      :       Annotation from a Labelbox NDJSON
+        options         :       A dictionary where you can lookup the name of an option given the schemaId
+    Returns:
+        The same annotation with the name of the feature added in
+    """    
     classification_name_lookup = {v['feature_schema_id']: k for k, v in options.items()}
     annotation.name = " "
     annotation.value.answer.name = classification_name_lookup[annotation.value.answer.feature_schema_id].replace(' ', '-')      
 
 def export_model_run_labels(lb_client, model_run_id, media_type):
+    """ Exports ground truth annotations from a model run
+    Args:
+        lb_client           :       Labelbox Client object
+        model_run_id        :       Labelbox model run ID to pull data rows and ground truth labels from
+        media_type          :       String that is either 'text' or 'image'
+    Returns:
+        NDJSON list of ground truth annotations from the model run
+    """        
     query_str = """
         mutation exportModelRunAnnotationsPyApi($modelRunId: ID!) {
             exportModelRunAnnotations(data: {modelRunId: $modelRunId}) {
@@ -58,7 +78,7 @@ def export_model_run_labels(lb_client, model_run_id, media_type):
 def process_predictions(batch_prediction_job, options):
     """
     Nested Functions:
-    build_radio_ndjson
+        build_radio_ndjson()
     """
     annotation_data = []
     for batch in batch_prediction_job.iter_outputs():
