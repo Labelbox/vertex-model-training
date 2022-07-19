@@ -80,7 +80,7 @@ def build_radio_ndjson(prediction, options, data_row_id):
         "schemaId": options[predicted]['parent_feature_schema_id']
     }
 
-def get_options(model_id):
+def get_options(model_id, lb_client):
     ontology_id = lb_client.execute(
         """query modelOntologyPyApi($modelId: ID!){
             model(where: {id: $modelId}) {ontologyId}}
