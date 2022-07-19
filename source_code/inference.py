@@ -1,6 +1,6 @@
 from labelbox.data.serialization import LBV1Converter, NDJsonConverter
 from labelbox.data.metrics.group import get_label_pairs
-from labelbox.data.metrics import feature_confusion_matrix_metric
+from labelbox.data.metrics import feature_miou_metric, feature_confusion_matrix_metric
 import requests
 import uuid
 import ndjson
@@ -13,6 +13,7 @@ def compute_metrics(labels, predictions, options):
     Nested Function:
       add_name_to_annotation
     """
+    predictions = []
     pairs = get_label_pairs(labels, predictions, filter_mismatch=True)
     for (ground_truth, prediction) in pairs.values():
         for annotation in prediction.annotations:
@@ -20,6 +21,9 @@ def compute_metrics(labels, predictions, options):
         for annotation in ground_truth.annotations:
             add_name_to_annotation(annotation, options)
         prediction.annotations.extend(feature_confusion_matrix_metric(ground_truth.annotations, prediction.annotations))
+        prediction.annotations.extend(feature_miou_metric(ground_truth.annotations, prediction.annotations))
+        predictions.append(prediction)
+    return predictions
 
 def add_name_to_annotation(annotation, options):
     classification_name_lookup = {v['feature_schema_id']: k for k, v in options.items()}
