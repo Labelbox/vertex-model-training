@@ -1,4 +1,11 @@
 def inference_function(request):
+    """ Generates and uploads predictions to a given model run
+    Args (passed from the monitor_function):
+        lb_api_key          :           Labelbox API Key
+        etl_file            :           URL to the ETL'ed data row / ground truth data from a Labelbox Model Run
+        model_name          :           Display name used for the Vertex AI Model
+        lb_model_run_id     :           Labelbox Model Run ID - used as the batch predction job name
+    """
     import json
     import uuid
     from labelbox import Client, ModelRun
@@ -24,7 +31,6 @@ def inference_function(request):
     
     model = aiplatform.Model.list(filter=f'display_name={model_name}')[0]
     prediction_job = batch_predict(etl_file, model, lb_model_run_id, "radio")
-#     prediction_job = aiplatform.jobs.BatchPredictionJob.list(filter=f'display_name={lb_model_run_id}')[0]
     print('Predictions generated. Converting predictions into Labelbox format.')
     options = get_options(model_run.model_id, lb_client)
     annotation_data = process_predictions(prediction_job, options)
@@ -43,10 +49,18 @@ def inference_function(request):
     return "Inference Job"
 
 def monitor_function(request):
+    """ Periodically checks a training job to see if it's completed, canceled, paused or failing
+    Args (passed from the train_function):
+        model_name          :           Display name used for the Vertex AI Model
+        inference_url       :           URL that will trigger the inference function
+        monitor_url         :           URL that will trigger the monitor function to run again
+    Returns:
+        Will either send the model training pipeline to inference or terminate the model training pipeline
+    """    
+    import requests
     import json
     import time
     from google.cloud import aiplatform
-    import requests
     from source_code.config import env_vars 
     
     request_bytes = request.get_data()
@@ -71,7 +85,7 @@ def monitor_function(request):
         "PipelineState.PIPELINE_STATE_CANCELLING"
     ]
     
-    print(job_state)
+    print(f'Current Job State: {job_state}')
     
     if job_state == "PipelineState.PIPELINE_STATE_SUCCEEDED":
         print('Training compete, sent to inference.')
@@ -85,9 +99,15 @@ def monitor_function(request):
     return "Monitor Job"
 
 def train_function(request):
-    """
-    Initates a training job and the monitor cloud function
-    """
+    """ Initiates the training job in Vertex
+    Args (passed from the etl_function):
+        etl_file            :           URL to the ETL'ed data row / ground truth data from a Labelbox Model Run    
+        lb_model_run_id     :           Labelbox Model Run ID - used as the training job name        
+        model_name          :           Display name used for the Vertex AI Model
+        monitor_url         :           URL that will trigger the monitor function 
+    Returns:
+        Creates a vertex dataset and launches a Vertex training job, triggers the monitor function
+    """   
     import json
     import requests
     from source_code.config import env_vars    
@@ -117,23 +137,25 @@ def train_function(request):
     return "Train Job"
 
 def etl_function(request):
-    """
-    Receives an ETL webhook trigger and returns a vertex dataset
-    Environment Variables:
-        api_key         :       Labelbox API Key
-        gcs_bucket      :       Name of a GCS Bucket to-be-generated
-        google_project  :       Name of the google project this Cloud Function is in
+    """ Exports data rows and ground truth labels from a model run, generates an ETL file in a storage bucket and launches training
+    Args:
+        lb_api_key          :           Labelbox API Key    
+        gcs_bucket          :           Creates a gcs bucket with this name. Ensure that this bucket doesn't exist yet, or ETL will fail
+        google_project      :           Name of the google project where this Cloud Function is hosted
+        model_name          :           Display name used for the Vertex AI Model
+        train_url           :           URL that will trigger the training function
+        monitor_url         :           URL that will trigger the monitor function      
+        inference_url       :           URL that will trigger the inference function  
     Returns:
-        Google Bucket with the data rows from the model run, ready to-be-converted into a Vertex Dataset
-        A dictionary where {model_run_id : etl_file}
+        Google Bucket with an ETL file representing the data rows and ground truth labels from the model run
+        Dictionary that gets passed through the other functions
     """
     import json
+    import requests    
+    from labelbox import Client    
+    from google.cloud import storage, aiplatform
     from source_code.config import env_vars, create_gcs_key, get_lb_client, get_gcs_client
-    from source_code.etl import etl_job, upload_ndjson_data
-    from labelbox import Client
-    from google.cloud import storage
-    from google.cloud import aiplatform
-    import requests
+    from source_code.etl import etl_job, upload_ndjson_data    
     
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
@@ -173,29 +195,27 @@ def etl_function(request):
     return "ETL Job"
 
 def model_run(request):
+    """ Reroutes the webhook trigger to the ETL function
+    Args:
+        etl_url             :           URL that will trigger the etl function
     """
-    Reroutes the webhook trigger to the ETL function
-    Environment Variables:
-        etl_url         :           URL for the ETL Cloud Function Trigger
-    """
-    import json
     import requests
     from source_code.config import env_vars
     
     string = request.get_data()
     etl_url = env_vars("etl_url")
+    
     requests.post(etl_url, data=string)
 
     return "Rerouting to ETL"
 
 def models(request):
-    """To-be-used in a Google Cloud Function.
+    """ Serves a list of model options in the Labelbox UI
     Args:
-        model_options           :           A list of model names you want to appear in the Labelbox UI
+        model_options       :           A list of model names you want to appear in the Labelbox UI
     """
-
     model_options = [ ## Input list of model options here
-        "image_classification_custom_model"
+        "image_classification"
     ]
 
     models_dict = {}
