@@ -77,6 +77,8 @@ def export_model_run_labels(lb_client, model_run_id, media_type):
 
 def process_predictions(batch_prediction_job, options):
     """
+    Args:
+    Returns:    
     Nested Functions:
         build_radio_ndjson()
     """
@@ -92,6 +94,10 @@ def process_predictions(batch_prediction_job, options):
     return annotation_data
 
 def build_radio_ndjson(prediction, options, data_row_id):
+    """
+    Args:
+    Returns:
+    """    
     confidences = prediction['confidences']
     argmax = confidences.index(max(confidences))
     predicted = prediction['displayNames'][argmax]
@@ -107,6 +113,10 @@ def build_radio_ndjson(prediction, options, data_row_id):
     }
 
 def get_options(model_id, lb_client):
+    """
+    Args:
+    Returns:
+    """
     ontology_id = lb_client.execute(
         """query modelOntologyPyApi($modelId: ID!){
             model(where: {id: $modelId}) {ontologyId}}
@@ -126,9 +136,13 @@ def get_options(model_id, lb_client):
 
 def batch_predict(etl_file, model, job_name, model_type):
     """
+    Args:
+        
+    Returns:
+        
     Nested Functions:
-      parse_url
-      build_inference_fule
+      parse_url()
+      build_inference_fule()
     """
     bucket_name, key = parse_uri(etl_file)
     source_uri = build_inference_file(bucket_name, key)
@@ -148,6 +162,12 @@ def batch_predict(etl_file, model, job_name, model_type):
     return batch_prediction_job
 
 def build_inference_file(bucket_name : str, key: str) -> str:
+    """ 
+    Args:
+
+    Returns:
+
+    """        
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(bucket_name)
     # Create a blob object from the filepath
@@ -165,6 +185,12 @@ def build_inference_file(bucket_name : str, key: str) -> str:
     return f"gs://{bucket.name}/{blob.name}"
 
 def parse_uri(etl_file):
+    """ Given an etl_file URI will return the bucket name and gcs key
+    Args:
+        etl_file            :       String URL representing the 
+    Returns:
+        Google storage bucket name and gcs key
+    """     
     parts = etl_file.replace("gs://", "").split("/")
     bucket_name, key = parts[0], "/".join(parts[1:])
     return bucket_name, key
