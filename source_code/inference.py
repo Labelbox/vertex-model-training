@@ -5,6 +5,7 @@ import requests
 import uuid
 import ndjson
 import time
+from google.cloud import storage
 
 def compute_metrics(self, labels, predictions, options):
     """
@@ -122,6 +123,7 @@ def batch_predict(etl_file, model, job_name, model_type):
     return batch_prediction_job
 
 def build_inference_file(bucket_name : str, key: str) -> str:
+    storage_client = storage.Client()
     bucket = storage_client.get_bucket(bucket_name)
     # Create a blob object from the filepath
     blob = bucket.blob(key)
