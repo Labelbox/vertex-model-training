@@ -138,8 +138,9 @@ def etl_function(request):
     lb_model_id = request_json['modelId']
     lb_model_run_id = request_json['modelRunId']
     model_type = request_json['modelType']
-
-    lb_client = get_lb_client()
+    
+    lb_api_key = env_vars("lb_api_key")
+    lb_client = get_lb_client(lb_api_key)
     bucket = get_gcs_client().create_bucket(env_vars('gcs_bucket'), location = 'US-CENTRAL1')    
     
     print("Beginning ETL")
@@ -154,7 +155,7 @@ def etl_function(request):
         "lb_model_id" : lb_model_id,
         "lb_model_run_id" : lb_model_run_id,
         "etl_file" : etl_file,
-        "lb_api_key" : env_vars("lb_api_key"),
+        "lb_api_key" : lb_api_key"lb_api_key",
         "google_project" : env_vars("google_project"),
         "model_name" : env_vars("model_name"),
         "train_url" : env_vars('train_url'),
