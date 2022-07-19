@@ -22,7 +22,7 @@ def inference_function(request):
     prediction_job = aiplatform.jobs.BatchPredictionJob.list(filter=f'display_name={lb_model_run_id}')[0]
     print('Predictions generated. Converting predictions into Labelbox format.')
     model_run = lb_client._get_single(ModelRun, lb_model_run_id)
-    options = get_options(model_run.model_id)
+    options = get_options(model_run.model_id, lb_client)
     annotation_data = process_predictions(prediction_job, options)
     predictions = list(NDJsonConverter.deserialize(annotation_data))
     print('Predictions reformatted. Exporting ground truth labels from model run.')
