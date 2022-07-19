@@ -6,6 +6,7 @@ import uuid
 import ndjson
 import time
 from google.cloud import storage
+from google.cloud import aiplatform
 
 def compute_metrics(self, labels, predictions, options):
     """
