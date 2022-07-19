@@ -6,6 +6,7 @@ def inference_function(request):
     from source_code.config import env_vars
     from source_code.inference import batch_predict, get_options, process_predictions, export_model_run_labels, compute_metrics   
     from google.cloud import aiplatform
+    from labelbox import ModelRun
 
 #     request_bytes = request.get_data()
 #     request_json = json.loads(request_bytes)
@@ -19,7 +20,7 @@ def inference_function(request):
     model = aiplatform.Model.list(filter=f'display_name={model_name}')[0]
     prediction_job = batch_predict(etl_file, model, lb_model_run_id, "radio")
     print('Predictions generated. Converting predictions into Labelbox format.')
-    model_run = lb_client._get_single(lb_model_run_id)
+    model_run = lb_client._get_single(ModelRun, lb_model_run_id)
     options = get_options(model_run.model_id)
     annotation_data = process_predictions(prediction_job, options)
     predictions = list(NDJsonConverter.deserialize(annotation_data))
