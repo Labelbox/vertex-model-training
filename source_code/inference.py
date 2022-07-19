@@ -24,7 +24,7 @@ def add_name_to_annotation(annotation, options):
     annotation.name = " "
     annotation.value.answer.name = tool_name_lookup[annotation.value.answer.feature_schema_id].replace(' ', '-')      
 
-def export_model_run_labels(lb_client, model_run_id, media_type: Union[Literal['image'], Literal['text']]):
+def export_model_run_labels(lb_client, model_run_id, media_type):
     query_str = """
         mutation exportModelRunAnnotationsPyApi($modelRunId: ID!) {
             exportModelRunAnnotations(data: {modelRunId: $modelRunId}) {
