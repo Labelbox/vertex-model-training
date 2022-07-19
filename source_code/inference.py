@@ -8,7 +8,7 @@ import time
 from google.cloud import storage
 from google.cloud import aiplatform
 
-def compute_metrics(self, labels, predictions, options):
+def compute_metrics(labels, predictions, options):
     """
     Nested Function:
       add_name_to_annotation
@@ -61,10 +61,8 @@ def process_predictions(batch_prediction_job, options):
                 continue
             prediction = prediction_data['prediction']
             # only way to get data row id is to lookup from the content uri
-            data_row_id = prediction_data['instance']['content'].split(
-                "/")[-1].replace(".txt" if self.media_type == "text" else ".jpg", "")
-            annotation_data.append(
-                self.build_radio_ndjson(prediction, options, data_row_id))
+            data_row_id = prediction_data['instance']['content'].split("/")[-1].replace(".jpg", "")
+            annotation_data.append(build_radio_ndjson(prediction, options, data_row_id))
     return annotation_data
 
 def build_radio_ndjson(prediction, options, data_row_id):
@@ -83,11 +81,11 @@ def build_radio_ndjson(prediction, options, data_row_id):
     }
 
 def get_options(model_id):
-    ontology_id = self.lb_client.execute(
+    ontology_id = lb_client.execute(
         """query modelOntologyPyApi($modelId: ID!){
             model(where: {id: $modelId}) {ontologyId}}
         """, {'modelId': model_id})['model']['ontologyId']
-    ontology = self.lb_client.get_ontology(ontology_id)
+    ontology = lb_client.get_ontology(ontology_id)
     classifications = ontology.classifications()
     options = {}
     for classification in classifications:
