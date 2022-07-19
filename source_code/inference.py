@@ -16,12 +16,14 @@ def compute_metrics(labels, predictions, options):
     predictions_with_metrics = []
     pairs = get_label_pairs(labels, predictions, filter_mismatch=True)
     for (ground_truth, prediction) in pairs.values():
+        metrics = []
         for annotation in prediction.annotations:
             add_name_to_annotation(annotation, options)
         for annotation in ground_truth.annotations:
             add_name_to_annotation(annotation, options)
-        prediction.annotations.extend(feature_confusion_matrix_metric(ground_truth.annotations, prediction.annotations))
-        prediction.annotations.extend(feature_miou_metric(ground_truth.annotations, prediction.annotations))
+        metrics.extend(feature_confusion_matrix_metric(ground_truth.annotations, prediction.annotations))
+        metrics.extend(feature_miou_metric(ground_truth.annotations, prediction.annotations))
+        prediction.annotations.extend(metrics)
         predictions_with_metrics.append(prediction)
     return predictions_with_metrics
 
