@@ -7,8 +7,8 @@ def inference_function(request):
     from source_code.inference import batch_predict, get_options, process_predictions, export_model_run_labels, compute_metrics   
     from google.cloud import aiplatform
 
-    request_bytes = request.get_data()
-    request_json = json.loads(request_bytes)
+#     request_bytes = request.get_data()
+#     request_json = json.loads(request_bytes)
     
     lb_api_key = env_vars('lb_api_key')
     etl_file = env_vars('etl_file')
