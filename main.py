@@ -3,19 +3,24 @@ def inference_function(request):
     import uuid
     from labelbox import Client
     from labelbox.data.serialization import NDJsonConverter
+    from source_code.config import env_vars
     from source_code.inference import batch_predict, get_options, process_predictions, export_model_run_labels, compute_metrics   
     from google.cloud import aiplatform
 
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
     
+    etl_file = env_vars('etl_file')
+    model_name = env_vars('model_name')
+    lb_model_run_id = env_vars('lb_model_run_id')
+    
     lb_client = Client(request_json['lb_api_key'])
     
-    training_job = aiplatform.Model.list(filter=f'display_name={request_json["model_name"]}')[0]
+    training_job = aiplatform.Model.list(filter=f'display_name={model_name}')[0]
     
-    prediction_job = batch_predict(request_json['etl_file'], model, request_json['lb_model_run_id'], model_type)
+    prediction_job = batch_predict(etl_file, model, lb_model_run_id, "radio")
     
-    model_run = lb_client._get_single(request_json['lb_model_run_id'])
+    model_run = lb_client._get_single(lb_model_run_id)
     
     options = get_options(model_run.model_id)
     
@@ -23,7 +28,7 @@ def inference_function(request):
     
     predictions = list(NDJsonConverter.deserialize(annotation_data))
     
-    labels = export_model_run_labels(lb_client, request_json['lb_model_run_id'], 'image')
+    labels = export_model_run_labels(lb_client, lb_model_run_id, 'image')
     
     compute_metrics(labels, predictions, options)
     
