@@ -137,7 +137,7 @@ def get_options(model_id, lb_client):
 def batch_predict(etl_file, model, job_name, model_type):
     """
     Args:
-        
+        etl_file        :       File generated from ETL function 
     Returns:
         
     Nested Functions:
@@ -164,9 +164,10 @@ def batch_predict(etl_file, model, job_name, model_type):
 def build_inference_file(bucket_name : str, key: str) -> str:
     """ 
     Args:
-
+        bucket_name         :        GCS bucket where the predictions will be saved
+        key                 :        GCS key
     Returns:
-
+        Inference file URL
     """        
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(bucket_name)
