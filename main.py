@@ -155,7 +155,7 @@ def etl_function(request):
         "lb_model_id" : lb_model_id,
         "lb_model_run_id" : lb_model_run_id,
         "etl_file" : etl_file,
-        "lb_api_key" : lb_api_key"lb_api_key",
+        "lb_api_key" : lb_api_key,
         "google_project" : env_vars("google_project"),
         "model_name" : env_vars("model_name"),
         "train_url" : env_vars('train_url'),
