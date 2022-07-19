@@ -17,7 +17,7 @@ def inference_function(request):
     
     lb_client = Client(lb_api_key)
     
-    training_job = aiplatform.Model.list(filter=f'display_name={model_name}')[0]
+    model = aiplatform.Model.list(filter=f'display_name={model_name}')[0]
     
     prediction_job = batch_predict(etl_file, model, lb_model_run_id, "radio")
     
