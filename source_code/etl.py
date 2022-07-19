@@ -187,22 +187,6 @@ def upload_image_to_gcs(image_bytes: BytesIO, data_row_id: str, bucket: storage.
     blob.upload_from_file(image_bytes, content_type="image/jpg")
     return f"gs://{bucket.name}/{blob.name}"
 
-def create_vertex_dataset(name: str, gcs_etl_file):
-    """ Converts an GCS ETL into a Vertex Dataset.
-    Args:
-        name                    :           Name of the dataset in Vertex
-        gcs_source              :           ETL File
-        import_schema_uri       :           Tells vertex the kind of prediciton task is taking place In this case, it's a single label classification
-    Returns:
-        ImageDataset object
-    """
-    print('Creating Vertex Dataset')
-    vertex_dataset = aiplatform.ImageDataset.create(display_name=name, 
-                                                    gcs_source=gcs_etl_file,
-                                                    import_schema_uri=aiplatform.schema.dataset.ioformat.image.single_label_classification)
-    print(f'Created Vertex Dataset with name {name}')
-    return vertex_dataset
-
 @Retry()
 def upload_ndjson_data(stringified_json : str, bucket: storage.Bucket, gcs_key : str) -> str:
     """
