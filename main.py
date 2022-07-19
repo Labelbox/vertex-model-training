@@ -111,8 +111,7 @@ def train_function(request):
     import json
     import requests
     from source_code.config import env_vars    
-    from source_code.etl import create_vertex_dataset
-    from source_code.train import create_autoML_training_job
+    from source_code.train import create_vertex_dataset, create_autoML_training_job
     
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
