@@ -13,7 +13,7 @@ def compute_metrics(labels, predictions, options):
     Nested Function:
       add_name_to_annotation
     """
-    predictions = []
+    predictions_with_metrics = []
     pairs = get_label_pairs(labels, predictions, filter_mismatch=True)
     for (ground_truth, prediction) in pairs.values():
         for annotation in prediction.annotations:
@@ -22,8 +22,8 @@ def compute_metrics(labels, predictions, options):
             add_name_to_annotation(annotation, options)
         prediction.annotations.extend(feature_confusion_matrix_metric(ground_truth.annotations, prediction.annotations))
         prediction.annotations.extend(feature_miou_metric(ground_truth.annotations, prediction.annotations))
-        predictions.append(prediction)
-    return predictions
+        predictions_with_metrics.append(prediction)
+    return predictions_with_metrics
 
 def add_name_to_annotation(annotation, options):
     classification_name_lookup = {v['feature_schema_id']: k for k, v in options.items()}
