@@ -7,24 +7,24 @@ def inference_function(request):
     from source_code.config import env_vars
     from source_code.inference import batch_predict, get_options, process_predictions, export_model_run_labels, compute_metrics   
 
-#     request_bytes = request.get_data()
-#     request_json = json.loads(request_bytes)
-#     lb_api_key = request_json['lb_api_key']    
-#     etl_file = request_json['etl_file'] 
-#     model_name = request_json['model_name'] 
-#     lb_model_run_id = request_json['lb_model_run_id'] 
+    request_bytes = request.get_data()
+    request_json = json.loads(request_bytes)
+    lb_api_key = request_json['lb_api_key']    
+    etl_file = request_json['etl_file'] 
+    model_name = request_json['model_name'] 
+    lb_model_run_id = request_json['lb_model_run_id'] 
     
-    lb_api_key = env_vars('lb_api_key')
-    etl_file = env_vars('etl_file')
-    model_name = env_vars('model_name')
-    lb_model_run_id = env_vars('lb_model_run_id')
+#     lb_api_key = env_vars('lb_api_key')
+#     etl_file = env_vars('etl_file')
+#     model_name = env_vars('model_name')
+#     lb_model_run_id = env_vars('lb_model_run_id')
     
     lb_client = Client(lb_api_key)
     model_run = lb_client._get_single(ModelRun, lb_model_run_id)
     
     model = aiplatform.Model.list(filter=f'display_name={model_name}')[0]
-#     prediction_job = batch_predict(etl_file, model, lb_model_run_id, "radio")
-    prediction_job = aiplatform.jobs.BatchPredictionJob.list(filter=f'display_name={lb_model_run_id}')[0]
+    prediction_job = batch_predict(etl_file, model, lb_model_run_id, "radio")
+#     prediction_job = aiplatform.jobs.BatchPredictionJob.list(filter=f'display_name={lb_model_run_id}')[0]
     print('Predictions generated. Converting predictions into Labelbox format.')
     options = get_options(model_run.model_id, lb_client)
     annotation_data = process_predictions(prediction_job, options)
@@ -33,10 +33,11 @@ def inference_function(request):
     labels = export_model_run_labels(lb_client, lb_model_run_id, 'image')
     print('Computing metrics.')    
     predictions_with_metrics = compute_metrics(labels, predictions, options)
-    print(predictions_with_metrics[0])
+    content = list(NDJsonConverter.serialize(predictions_with_metrics))
+    print(content)
     print('Metrics computed. Uploading predictions and metrics to model run.')   
-    upload_task = model_run.add_predictions(f'diagnostics-import-{uuid.uuid4()}', NDJsonConverter.serialize(predictions_with_metrics))
-    upload_task.errors
+    upload_task = model_run.add_predictions(f'diagnostics-import-{uuid.uuid4()}', content)
+    print(upload_task.statuses)
     print('Inference job complete.')
     
     return "Inference Job"
