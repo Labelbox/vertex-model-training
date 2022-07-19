@@ -10,11 +10,12 @@ def inference_function(request):
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
     
+    lb_api_key = env_vars('lb_api_key')
     etl_file = env_vars('etl_file')
     model_name = env_vars('model_name')
     lb_model_run_id = env_vars('lb_model_run_id')
     
-    lb_client = Client(request_json['lb_api_key'])
+    lb_client = Client(lb_api_key)
     
     training_job = aiplatform.Model.list(filter=f'display_name={model_name}')[0]
     
