@@ -22,9 +22,9 @@ def compute_metrics(labels, predictions, options):
         prediction.annotations.extend(feature_confusion_matrix_metric(ground_truth.annotations, prediction.annotations))
 
 def add_name_to_annotation(annotation, options):
-    tool_name_lookup = {v['feature_schema_id']: k for k, v in options.items()}
+    classification_name_lookup = {v['feature_schema_id']: k for k, v in options.items()}
     annotation.name = " "
-    annotation.value.answer.name = tool_name_lookup[annotation.value.answer.feature_schema_id].replace(' ', '-')      
+    annotation.value.answer.name = classification_name_lookup[annotation.value.answer.feature_schema_id].replace(' ', '-')      
 
 def export_model_run_labels(lb_client, model_run_id, media_type):
     query_str = """
@@ -90,11 +90,11 @@ def get_options(model_id, lb_client):
     options = {}
     for classification in classifications:
         options.update({
-            f"{tool.instructions}_{option.value}": {
+            f"{classification.instructions}_{option.value}": {
                 "feature_schema_id": option.feature_schema_id,
                 "parent_feature_schema_id": classification.feature_schema_id,
                 "type": classification.class_type.value
-            } for option in tool.options
+            } for option in classification.options
         })
     return options
 
