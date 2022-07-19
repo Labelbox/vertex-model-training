@@ -14,29 +14,23 @@ def inference_function(request):
     etl_file = env_vars('etl_file')
     model_name = env_vars('model_name')
     lb_model_run_id = env_vars('lb_model_run_id')
-    
     lb_client = Client(lb_api_key)
     
     model = aiplatform.Model.list(filter=f'display_name={model_name}')[0]
-    
     prediction_job = batch_predict(etl_file, model, lb_model_run_id, "radio")
-    
+    print('Predictions generated. Converting predictions into Labelbox format.')
     model_run = lb_client._get_single(lb_model_run_id)
-    
     options = get_options(model_run.model_id)
-    
     annotation_data = process_predictions(prediction_job, options)
-    
     predictions = list(NDJsonConverter.deserialize(annotation_data))
-    
+    print('Predictions reformatted. Exporting ground truth labels from model run.')
     labels = export_model_run_labels(lb_client, lb_model_run_id, 'image')
-    
+    print('Computing metrics.')    
     compute_metrics(labels, predictions, options)
-    
+    print('Metrics computed. Uploading predictions and metrics to model run.')   
     upload_task = model_run.add_predictions(f'diagnostics-import-{uuid.uuid4()}', NDJsonConverter.serialize(predictions))
-    
     upload_task.wait_until_done()
-    
+    print('Inference job complete.')
     return "Inference Job"
 
 def monitor_function(request):
