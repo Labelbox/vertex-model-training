@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from labelbox import Client
 from labelbox.data.annotation_types import Label, Radio
 from labelbox.data.serialization import LBV1Converter
-from google.cloud import aiplatform, storage
+from google.cloud import storage
 from google.api_core.retry import Retry
 from source_code.errors import MissingEnvironmentVariableException, InvalidDataRowException, InvalidLabelException
 
