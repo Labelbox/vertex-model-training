@@ -113,9 +113,12 @@ def build_radio_ndjson(prediction, options, data_row_id):
     }
 
 def get_options(model_id, lb_client):
-    """
+    """ Creates a dictionary where key = classification_option : value = { feature_schema_id, parent_feature_schema_id, type } from a Labelbox Ontology
     Args:
+        model_id        :       Labelbox Model ID to pull an ontology from
+        lb_client       :       Labelbox Client object
     Returns:
+        Reference dictionary for a given ontology
     """
     ontology_id = lb_client.execute(
         """query modelOntologyPyApi($modelId: ID!){
@@ -135,11 +138,13 @@ def get_options(model_id, lb_client):
     return options
 
 def batch_predict(etl_file, model, job_name, model_type):
-    """
+    """ Creates a batch prediction job given a Vertex Model and ETL file
     Args:
         etl_file        :       File generated from ETL function 
+        job_name        :       Name given to the batch prediction job
+        model_type      :       Used in creating the destination URI
     Returns:
-        
+        Google Vertex Batch Prediction Job
     Nested Functions:
       parse_url()
       build_inference_fule()
