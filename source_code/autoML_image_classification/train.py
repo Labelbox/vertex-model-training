@@ -1,6 +1,6 @@
 from google.cloud import aiplatform
 
-def create_autoML_training_job(model_name: str, vertex_dataset, model_run_id):
+def create_training_job(model_name: str, vertex_dataset, model_run_id):
     """ Launches the vertex training job
     Args:
         model_name              :           Display name given to the training job and the Vertex ML model
