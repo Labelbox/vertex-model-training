@@ -12,7 +12,6 @@ def inference_function(request):
     from labelbox.data.serialization import NDJsonConverter
     from google.cloud import aiplatform    
     from source_code.config import env_vars
-    from source_code.inference import batch_predict, get_options, process_predictions, export_model_run_labels, compute_metrics   
 
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
@@ -20,14 +19,15 @@ def inference_function(request):
     etl_file = request_json['etl_file'] 
     model_name = request_json['model_name'] 
     lb_model_run_id = request_json['lb_model_run_id'] 
-    
-#     lb_api_key = env_vars('lb_api_key')
-#     etl_file = env_vars('etl_file')
-#     model_name = env_vars('model_name')
-#     lb_model_run_id = env_vars('lb_model_run_id')
+    model_type = request_json['model_type']
     
     lb_client = Client(lb_api_key)
     model_run = lb_client._get_single(ModelRun, lb_model_run_id)
+    
+    if model_type == "autoML_image_classification":
+        from source_code.autoML_image_classification.inference import batch_predict, get_options, process_predictions, export_model_run_labels, compute_metrics
+    elif model_type == "custom_image_classification":
+        from source_code.custom_image_classification.inference import batch_predict, get_options, process_predictions, export_model_run_labels, compute_metrics
     
     model = aiplatform.Model.list(filter=f'display_name={model_name}')[0]
     prediction_job = batch_predict(etl_file, model, lb_model_run_id, "radio")
@@ -68,14 +68,15 @@ def monitor_function(request):
     model_name = request_json["model_name"]
     inference_url = request_json["inference_url"]
     monitor_url = request_json["monitor_url"]
-    
-#     model_name = env_vars("model_name")
-#     inference_url = env_vars("inference_url")
-#     monitor_url = env_vars("monitor_url")
+    model_type = request_json['model_type']
     
     time.sleep(300)
+
+    if model_type == "autoML_image_classification":
+        training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name={model_name}')[0]
+    elif model_type == "custom_image_classification":
+        training_job = aiplatform.CustomTrainingJob.list(filter=f'display_name={model_name}')[0]
     
-    training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name={model_name}')[0]
     job_state = str(training_job.state)
     
     completed_states = [
@@ -111,7 +112,7 @@ def train_function(request):
     import json
     import requests
     from source_code.config import env_vars    
-    from source_code.train import create_vertex_dataset, create_autoML_training_job
+    
     
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
@@ -119,18 +120,20 @@ def train_function(request):
     lb_model_run_id = request_json['lb_model_run_id']
     model_name = request_json['model_name']
     monitor_url = request_json['monitor_url']
+    model_type = request_json['model_type']
 
-#     etl_file = env_vars('etl_file')
-#     lb_model_run_id = env_vars('lb_model_run_id')
-#     model_name = env_vars('model_name')
-#     monitor_url = env_vars('monitor_url')
+    if model_type == "autoML_image_classification":
+        from source_code.autoML_image_classification.train import create_vertex_dataset, create_training_job
+    elif model_type == "custom_image_classification":
+        from source_code.custom_image_classification.train import create_vertex_dataset, create_training_job 
     
     vertex_dataset = create_vertex_dataset(lb_model_run_id, etl_file)
-    vertex_model, vertex_model_id = create_autoML_training_job(model_name, vertex_dataset, lb_model_run_id)
+    vertex_model, vertex_model_id = create_training_job(model_name, vertex_dataset, lb_model_run_id)
     
     print('Training launched, sent to monitor function.')                                                              
     print(f"Job Name: {lb_model_run_id}")
     print(f'Vertex Model ID: {vertex_model_id}')
+    
     requests.post(monitor_url, data=request_bytes)
     
     return "Train Job"
