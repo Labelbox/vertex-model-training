@@ -156,7 +156,7 @@ def etl_function(request):
     import requests    
     from labelbox import Client    
     from google.cloud import storage, aiplatform    
-    from source_code.config import env_vars
+    from source_code.config import env_vars, get_lb_client, get_gcs_client, create_gcs_key
     
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
