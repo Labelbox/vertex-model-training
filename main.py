@@ -152,9 +152,7 @@ def etl_function(request):
     import json
     import requests    
     from labelbox import Client    
-    from google.cloud import storage, aiplatform
-    from source_code.config import env_vars, create_gcs_key, get_lb_client, get_gcs_client
-    from source_code.etl import etl_job, upload_ndjson_data    
+    from google.cloud import storage, aiplatform    
     
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
@@ -164,17 +162,25 @@ def etl_function(request):
     
     lb_api_key = env_vars("lb_api_key")
     lb_client = get_lb_client(lb_api_key)
-    bucket = get_gcs_client().create_bucket(env_vars('gcs_bucket'), location = 'US-CENTRAL1')    
+    google_project = env_vars("google_project")
+    gcs_bucket = env_vars('gcs_bucket')
+    bucket = get_gcs_client(google_project).create_bucket(gcs_bucket, location = 'US-CENTRAL1') 
+    gcs_key = create_gcs_key(lb_model_run_id)   
+
+    if model_type == "autoML_image_classification":
+        from source_code.autoML_image_classification.etl import etl_job, upload_ndjson_data
+    elif model_type == "custom_image_classification":
+        from source_code.custom_image_classification.etl import etl_job, upload_ndjson_data
     
     print("Beginning ETL")
     
     json_data = etl_job(lb_client, lb_model_run_id, bucket)
-    gcs_key = create_gcs_key(lb_model_run_id)
     etl_file = upload_ndjson_data(json_data, bucket, gcs_key)
     
     print(f'ETL File: {etl_file}')
     
     post_dict = {
+        "model_type" : model_type
         "lb_model_id" : lb_model_id,
         "lb_model_run_id" : lb_model_run_id,
         "etl_file" : etl_file,
@@ -214,7 +220,8 @@ def models(request):
         model_options       :           A list of model names you want to appear in the Labelbox UI
     """
     model_options = [ ## Input list of model options here
-        "image_classification"
+        "autoML_image_classification",
+        "custom_image_classification"
     ]
 
     models_dict = {}
