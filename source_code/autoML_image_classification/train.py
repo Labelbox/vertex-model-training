@@ -1,6 +1,6 @@
 from google.cloud import aiplatform
 
-def create_autoML_training_job(model_name: str, vertex_dataset, model_run_id):
+def create_training_job(model_name: str, vertex_dataset, model_run_id):
     """ Launches the vertex training job
     Args:
         model_name              :           Display name given to the training job and the Vertex ML model
@@ -9,14 +9,14 @@ def create_autoML_training_job(model_name: str, vertex_dataset, model_run_id):
     Returns:
         Vertex model object, vertex model ID string
     """  
-  vertex_model_id = str(model_name) + "-" + str(model_run_id)
-  job = aiplatform.AutoMLImageTrainingJob(
+    vertex_model_id = str(model_name) + "-" + str(model_run_id)
+    job = aiplatform.AutoMLImageTrainingJob(
     display_name = model_name,
     prediction_type = "classification",
     multi_label = False,
     model_type = "MOBILE_TF_VERSATILE_1"
-  )
-  model = job.run(
+    )
+    model = job.run(
     dataset = vertex_dataset,
     sync = False,
     model_id = vertex_model_id,
@@ -25,8 +25,8 @@ def create_autoML_training_job(model_name: str, vertex_dataset, model_run_id):
     training_filter_split = "labels.aiplatform.googleapis.com/ml_use=training",
     validation_filter_split = "labels.aiplatform.googleapis.com/ml_use=validation",
     test_filter_split = "labels.aiplatform.googleapis.com/ml_use=test"
-  )
-  return model, vertex_model_id
+    )
+    return model, vertex_model_id
 
 def create_vertex_dataset(name: str, gcs_etl_file):
     """ Converts an GCS ETL into a Vertex Dataset
