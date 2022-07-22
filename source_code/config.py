@@ -38,7 +38,7 @@ def env_vars(value):
     """
     return os.environ.get(value, '')
 
-def get_labels_for_model_run(client: Client, model_run_id: str, media_type: str, strip_subclasses: bool:
+def get_labels_for_model_run(client: Client, model_run_id: str, media_type: str, strip_subclasses: bool):
     """ Exports all labels from a model run
     Args:
         client          :       Labelbox client used for fetching labels
