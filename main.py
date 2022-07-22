@@ -180,7 +180,7 @@ def etl_function(request):
     print(f'ETL File: {etl_file}')
     
     post_dict = {
-        "model_type" : model_type
+        "model_type" : model_type,
         "lb_model_id" : lb_model_id,
         "lb_model_run_id" : lb_model_run_id,
         "etl_file" : etl_file,
