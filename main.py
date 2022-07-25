@@ -227,7 +227,7 @@ def etl_function(request):
         "google_project" : google_project,
         "model_name" : model_name,
         "train_url" : train_url,
-        "monitor_url" : monitor_url
+        "monitor_url" : monitor_url,
         "inference_url" : inference_url
     }
     post_bytes = json.dumps(post_dict).encode('utf-8')
