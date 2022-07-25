@@ -7,9 +7,9 @@ from PIL.Image import Image, open as load_image, DecompressionBombError
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from labelbox import Client
 from labelbox.data.annotation_types import Label, Radio
-from labelbox.data.serialization import LBV1Converter
 from google.cloud import storage
 from google.api_core.retry import Retry
+from source_code.config import get_labels_for_model_run
 from source_code.errors import MissingEnvironmentVariableException, InvalidDataRowException, InvalidLabelException
 
 def etl_job(lb_client: Client, model_run_id: str, bucket: storage.Bucket):
@@ -26,31 +26,9 @@ def etl_job(lb_client: Client, model_run_id: str, bucket: storage.Bucket):
         process_labels_in_threadpool()
         process_label()
     """
-    labels = get_labels_for_model_run(lb_client, model_run_id, media_type='image')
+    labels = get_labels_for_model_run(lb_client, model_run_id, media_type='image', strip_subclasses=True)
     vertex_labels = process_labels_in_threadpool(process_label, labels, bucket)
     return "\n".join([json.dumps(label) for label in vertex_labels])
-
-def get_labels_for_model_run(client: Client, model_run_id: str, media_type: str):
-    """ Exports all labels from a model run
-    Args:
-        client          :       Labelbox client used for fetching labels
-        model_run_id    :       model run to fetch labels for
-        media_type      :       Should either be "image" or "text" string
-    Returns:
-        LabelGenerator with labels to-be-converted into vertex syntax    
-    """
-    print("Initiating Label Export")
-    model_run = client.get_model_run(model_run_id)
-    json_labels = model_run.export_labels(download=True)
-    print("Label Export Complete")
-    for row in json_labels:
-        if media_type is not None:
-            row['media_type'] = media_type
-        # Strip subclasses
-        for annotation in row['Label']['objects']:
-            if 'classifications' in annotation:
-                del annotation['classifications']
-    return LBV1Converter.deserialize(json_labels)
 
 def process_labels_in_threadpool(process_fn: Callable[..., Dict[str, Any]],labels: List[Label], *args, max_workers = 8) -> List[Dict[str, Any]]:
     """ Function for running etl processing in parallel
@@ -70,9 +48,9 @@ def process_labels_in_threadpool(process_fn: Callable[..., Dict[str, Any]],label
         for future in as_completed(training_data_futures):
             try:
                 vertex_labels.append(future.result())
-            except InvalidDataRowException as e:
+            except InvalidDataRowException:
                 filter_count['data_rows'] += 1
-            except InvalidLabelException as e:
+            except InvalidLabelException:
                 filter_count['labels'] += 1
     print('Label Processing Complete')                
     return vertex_labels
