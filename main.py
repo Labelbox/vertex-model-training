@@ -13,23 +13,29 @@ def inference_function(request):
     from google.cloud import aiplatform    
     from source_code.config import env_vars
 
+    # Receive data from trigger
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
+    
+    # Parse data from trigger    
     lb_api_key = request_json['lb_api_key']    
     etl_file = request_json['etl_file'] 
     model_name = request_json['model_name'] 
     lb_model_run_id = request_json['lb_model_run_id'] 
     model_type = request_json['model_type']
     
+    # Configure environment    
+    model = aiplatform.Model.list(filter=f'display_name={model_name}')[0]    
     lb_client = Client(lb_api_key)
     model_run = lb_client._get_single(ModelRun, lb_model_run_id)
     
+    # Select model type       
     if model_type == "autoML_image_classification":
         from source_code.autoML_image_classification.inference import batch_predict, get_options, process_predictions, export_model_run_labels, compute_metrics
     elif model_type == "custom_image_classification":
         from source_code.custom_image_classification.inference import batch_predict, get_options, process_predictions, export_model_run_labels, compute_metrics
     
-    model = aiplatform.Model.list(filter=f'display_name={model_name}')[0]
+    # Code execution    
     prediction_job = batch_predict(etl_file, model, lb_model_run_id, "radio")
     print('Predictions generated. Converting predictions into Labelbox format.')
     options = get_options(model_run.model_id, lb_client)
@@ -44,6 +50,7 @@ def inference_function(request):
     print('Metrics computed. Uploading predictions and metrics to model run.')   
     upload_task = model_run.add_predictions(f'diagnostics-import-{uuid.uuid4()}', content)
     print(upload_task.statuses)
+    model_run.update_status("COMPLETE")  
     print('Inference job complete.')
     
     return "Inference Job"
@@ -63,31 +70,34 @@ def monitor_function(request):
     from google.cloud import aiplatform
     from source_code.config import env_vars 
     
+    # Receive data from trigger    
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)    
+    
+    # Parse data from trigger    
     model_name = request_json["model_name"]
     inference_url = request_json["inference_url"]
     monitor_url = request_json["monitor_url"]
     model_type = request_json['model_type']
-    
-    time.sleep(300)
 
+    # Select model type    
     if model_type == "autoML_image_classification":
         training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name={model_name}')[0]
     elif model_type == "custom_image_classification":
         training_job = aiplatform.CustomTrainingJob.list(filter=f'display_name={model_name}')[0]
     
+    # Code execution    
+    time.sleep(300)
     job_state = str(training_job.state)
-    
     completed_states = [
         "PipelineState.PIPELINE_STATE_FAILED",
         "PipelineState.PIPELINE_STATE_CANCELLED",
         "PipelineState.PIPELINE_STATE_PAUSED",
         "PipelineState.PIPELINE_STATE_CANCELLING"
     ]
-    
-    print(f'Current Job State: {job_state}')
-    
+    print(f'Current Job State: {job_state}')    
+
+    # Trigger model training monitor function or model training inference function  
     if job_state == "PipelineState.PIPELINE_STATE_SUCCEEDED":
         print('Training compete, sent to inference.')
         requests.post(inference_url, data=request_bytes)
@@ -111,29 +121,40 @@ def train_function(request):
     """   
     import json
     import requests
-    from source_code.config import env_vars    
+    from labelbox import ModelRun
+    from source_code.config import get_lb_client    
     
-    
+    # Receive data from trigger
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
+    
+    # Parse data from trigger
     etl_file = request_json['etl_file']
+    lb_api_key = request_json['lb_api_key']
     lb_model_run_id = request_json['lb_model_run_id']
     model_name = request_json['model_name']
     monitor_url = request_json['monitor_url']
     model_type = request_json['model_type']
+    
+    # Configure environment
+    lb_client = get_lb_client(lb_api_key)
+    model_run = lb_client._get_single(ModelRun, lb_model_run_id)
 
+    # Select model type
     if model_type == "autoML_image_classification":
         from source_code.autoML_image_classification.train import create_vertex_dataset, create_training_job
     elif model_type == "custom_image_classification":
         from source_code.custom_image_classification.train import create_vertex_dataset, create_training_job 
     
+    # Code execution
     vertex_dataset = create_vertex_dataset(lb_model_run_id, etl_file)
     vertex_model, vertex_model_id = create_training_job(model_name, vertex_dataset, lb_model_run_id)
-    
+    model_run.update_status("TRAINING_MODEL")    
     print('Training launched, sent to monitor function.')                                                              
     print(f"Job Name: {lb_model_run_id}")
     print(f'Vertex Model ID: {vertex_model_id}')
     
+    # Trigger model training monitor function
     requests.post(monitor_url, data=request_bytes)
     
     return "Train Job"
@@ -154,51 +175,63 @@ def etl_function(request):
     """
     import json
     import requests    
-    from labelbox import Client    
+    from labelbox import Client, ModelRun
     from google.cloud import storage, aiplatform    
     from source_code.config import env_vars, get_lb_client, get_gcs_client, create_gcs_key
     
+    # Receive data from trigger 
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
+    
+    # Parse data from trigger    
     lb_model_id = request_json['modelId']
     lb_model_run_id = request_json['modelRunId']
     model_type = request_json['modelType']
     
+    # Read environment variables   
     lb_api_key = env_vars("lb_api_key")
-    lb_client = get_lb_client(lb_api_key)
-    google_project = env_vars("google_project")
+    google_project = env_vars("google_project")    
     gcs_bucket = env_vars('gcs_bucket')
+    model_name = env_vars("model_name")
+    train_url = env_vars('train_url')
+    monitor_url = env_vars('monitor_url')
+    inference_url = env_vars('inference_url')    
+    
+    # Configure environment
+    lb_client = get_lb_client(lb_api_key)
     bucket = get_gcs_client(google_project).create_bucket(gcs_bucket, location = 'US-CENTRAL1') 
-    gcs_key = create_gcs_key(lb_model_run_id)   
+    gcs_key = create_gcs_key(lb_model_run_id)  
+    model_run = lb_client._get_single(ModelRun, lb_model_run_id)
 
+    # Select model type
     if model_type == "autoML_image_classification":
         from source_code.autoML_image_classification.etl import etl_job, upload_ndjson_data
     elif model_type == "custom_image_classification":
         from source_code.custom_image_classification.etl import etl_job, upload_ndjson_data
     
+    # Code execution
     print("Beginning ETL")
-    
+    model_run.update_status("EXPORTING_DATA")
     json_data = etl_job(lb_client, lb_model_run_id, bucket)
+    model_run.update_status("PREPARING_DATA")    
     etl_file = upload_ndjson_data(json_data, bucket, gcs_key)
-    
     print(f'ETL File: {etl_file}')
     
+    # Trigger model training function  
     post_dict = {
         "model_type" : model_type,
         "lb_model_id" : lb_model_id,
         "lb_model_run_id" : lb_model_run_id,
         "etl_file" : etl_file,
         "lb_api_key" : lb_api_key,
-        "google_project" : env_vars("google_project"),
-        "model_name" : env_vars("model_name"),
-        "train_url" : env_vars('train_url'),
-        "monitor_url" : env_vars('monitor_url'),
-        "inference_url" : env_vars('inference_url')
+        "google_project" : google_project,
+        "model_name" : model_name,
+        "train_url" : train_url,
+        "monitor_url" : monitor_url
+        "inference_url" : inference_url
     }
-    
     post_bytes = json.dumps(post_dict).encode('utf-8')
     requests.post(post_dict['train_url'], data=post_bytes)
-    
     print(f"ETL Complete. Training Job Initiated.")
     
     return "ETL Job"
