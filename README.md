@@ -38,10 +38,10 @@ Once the integration is set up, a model training sequence works as follows:
 ### How to set up in your own Labelbox / GCP envirionment
 1) Set up (or select) a google project in GCS to host your Cloud Functions, take note of the google project name
 2) Create a Labelbox API key
-4) Create a 1st-Gen cloud function named 'monitor_function'
-3) Create 2nd-Gen cloud functions named `etl_function`, `train_function`, and `inference_function`
+4) Create a 1st-Gen cloud function named `monitor_function`
+3) Create 2nd-Gen cloud functions named `etl-function`, `train-function`, and `inference-function`
 4) Within each cloud function, take note of the URL on the `Trigger` tab for each cloud function
-5) Once all that data is noted, run the following in your command-line-interface (for Macs, Terminal as an example)
+5) Once all that data is noted, run the following in your command-line-interface (for Macs, Terminal as an example):
 
 `cd example_directory` (for example, Downloads)
 
@@ -60,3 +60,7 @@ Once the integration is set up, a model training sequence works as follows:
 `gcloud functions deploy monitor-function --entry-point monitor_function --runtime python37 --trigger-http --allow-unauthenticated --timeout=540`
 
 `gcloud beta functions deploy inference-function --gen2 --entry-point inference_function --runtime python38 --trigger-http --allow-unauthenticated --timeout=3600 --memory=8192MB`
+
+6) Then, go to your `models` function in the Google Cloud project, note the URL on the trigger tab will have something along the lines of `https://us-central1-GOOGLE_PROJECT.cloudfunctions.net/models` -- take note of the URL except for the `/models` suffix
+7) In your Labelbox Model, add this URL in the URL field on the `Settings` > `Model Training` section. If using Cloud Functions in this approach, no secret key is necessary. 
+8) Now you can execute model training from Labelbox. Note that this protocol creates a Google Bucket, so if you run it again, you'll have to rename your Google Vertex Model Name and Google Cloud Storage Bucket by rerunning the `gcloud` command line for the `etl-function`.
