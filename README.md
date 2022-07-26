@@ -62,5 +62,5 @@ Once the integration is set up, a model training sequence works as follows:
 `gcloud beta functions deploy inference-function --gen2 --entry-point inference_function --runtime python38 --trigger-http --allow-unauthenticated --timeout=3600 --memory=8192MB`
 
 6) Then, go to your `models` function in the Google Cloud project, note the URL on the trigger tab will have something along the lines of `https://us-central1-GOOGLE_PROJECT.cloudfunctions.net/models` -- take note of the URL except for the `/models` suffix
-7) In your Labelbox Model, add this URL in the URL field on the `Settings` > `Model Training` section. If using Cloud Functions in this approach, no secret key is necessary. 
+7) In your Labelbox Model, add this URL in the URL field on the `Settings` > `Model Training` section (example is `https://us-central1-GOOGLE_PROJECT.cloudfunctions.net/` in this case). If using Cloud Functions in this approach, no secret key is necessary. 
 8) Now you can execute model training from Labelbox. Note that this protocol creates a Google Bucket, so if you run it again, you'll have to rename your Google Vertex Model Name and Google Cloud Storage Bucket by rerunning the `gcloud` command line for the `etl-function`.
