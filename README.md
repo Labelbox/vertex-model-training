@@ -51,9 +51,9 @@ Once the integration is set up, a model training sequence works as follows:
 
 `gcloud functions deploy models --entry-point models --runtime python37 --trigger-http --allow-unauthenticated --timeout=540`
 
-`gcloud functions deploy model_run --entry-point model_run --runtime python37 --trigger-http --allow-unauthenticated --timeout=540 --set-env-vars=etl_url=ETL_FUNCTION_TRIGGER_URL`
+`gcloud functions deploy model_run --entry-point model_run --runtime python37 --trigger-http --allow-unauthenticated --timeout=540 --set-env-vars=etl_url=ETL_FUNCTION_URL` (insert your value for ETL_FUNCTION_URL)
 
-`gcloud beta functions deploy etl-function --gen2 --entry-point etl_function --runtime python38 --trigger-http --allow-unauthenticated --timeout=3600 --set-env-vars=lb_api_key=API_KEYE,gcs_bucket=BUCKET_NAME,model_name=MODEL_NAME,google_project=GOOGLE_PROJECT,train_url=TRAIN_FUNCTION_URL,monitor_url=MONITOR_FUNCTION_URL,inference_url=INFERENCE_FUNCTION_URL`
+`gcloud beta functions deploy etl-function --gen2 --entry-point etl_function --runtime python38 --trigger-http --allow-unauthenticated --timeout=3600 --set-env-vars=lb_api_key=API_KEY,gcs_bucket=BUCKET_NAME,model_name=MODEL_NAME,google_project=GOOGLE_PROJECT,train_url=TRAIN_FUNCTION_URL,monitor_url=MONITOR_FUNCTION_URL,inference_url=INFERENCE_FUNCTION_URL` (insert your values for API_KEY, BUCKET_NAME, MODEL_NAME, GOOGLE_PROJECT, TRAIN_FUNCTION_URL, MONITOR_FUNCTION_URL, and INFERENCE_FUNCTION_URL)
 
 `gcloud beta functions deploy train-function --gen2 --entry-point train_function --runtime python38 --trigger-http --allow-unauthenticated --timeout=3600`
 
