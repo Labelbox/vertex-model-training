@@ -36,7 +36,7 @@ Once the integration is set up, a model training sequence works as follows:
 7)	Webhook Load results to Labelbox: Webhook handles calls Lablebox SDK to load test/validate inference and diagnostics enabling Labelbox's detailed visual model run analaysis
 
 ### How to set up in your own Labelbox / GCP envirionment
-(Steps TBD)
+(Steps WIP)
 
 
 
