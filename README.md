@@ -42,12 +42,21 @@ Once the integration is set up, a model training sequence works as follows:
 3) Create 2nd-Gen cloud functions named `etl_function`, `train_function`, and `inference_function`
 4) Within each cloud function, take note of the URL on the `Trigger` tab for each cloud function
 5) Once all that data is noted, run the following in your command-line-interface (for Macs, Terminal as an example)
+
 -- `cd example_directory` (for example, Downloads)
+
 -- git clone git clone https://github.com/Labelbox/vertex-model-training.git
+
 -- `cd vertex-model-training`
+
 -- `gcloud functions deploy models --entry-point models --runtime python37 --trigger-http --allow-unauthenticated --timeout=540`
+
 -- `gcloud functions deploy model_run --entry-point model_run --runtime python37 --trigger-http --allow-unauthenticated --timeout=540 --set-env-vars=etl_url=ETL_FUNCTION_TRIGGER_URL`
+
 -- gcloud beta functions deploy etl-function --gen2 --entry-point etl_function --runtime python38 --trigger-http --allow-unauthenticated --timeout=3600 --set-env-vars=lb_api_key=API_KEYE,gcs_bucket=BUCKET_NAME,model_name=MODEL_NAME,google_project=GOOGLE_PROJECT,train_url=TRAIN_FUNCTION_URL,monitor_url=MONITOR_FUNCTION_URL,inference_url=INFERENCE_FUNCTION_URL`
+
 -- `gcloud beta functions deploy train-function --gen2 --entry-point train_function --runtime python38 --trigger-http --allow-unauthenticated --timeout=3600`
+
 -- `gcloud functions deploy monitor-function --entry-point monitor_function --runtime python37 --trigger-http --allow-unauthenticated --timeout=540`
+
 -- `gcloud beta functions deploy inference-function --gen2 --entry-point inference_function --runtime python38 --trigger-http --allow-unauthenticated --timeout=3600 --memory=8192MB`
