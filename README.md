@@ -5,15 +5,15 @@ This repository is a one stop shop for integrating Labelbox with a model Trainin
 ### Background
 Labelbox is designed to integrate with any Model Training or Pipeline backend.  Whether or not your existing backend supports an Active Learning lifecycle, Labelbox integration can improve your training data MLDLC by adding the following features:
 
-- Improved error analysis leveraging confidence threhsold support (5x/10x improvement to error analysis)
+- Improved error analysis leveraging confidence threshold support (5x/10x improvement to error analysis)
 - Pre integrated MAL
-- Models trainig limits as high as 1M data rows 
+- Models training limits as high as 1M data rows 
 - Aligning your labeling data curation with your data split management
 - Model Runs provide a complete historical to the assets, annotations, test/train/validate splits for every model training run
-- Integrated launch of Model Training from the Labelbox Interface. Labelbox becomes the IDE and data debugger for training data cureation
-- Data Selection, whehter to improve active learning cycle time, or prioritize production bugfix
+- Integrated launch of Model Training from the Labelbox Interface. Labelbox becomes the IDE and data debugger for training data curation
+- Data Selection, whether to improve active learning cycle time, or prioritize production bugfix
 - Integrates with MLDLC and CI/CD pipelines
-- Data discovery with Catalog: Loal all historical Model inference to Labelbox. The seamkess integration integrated, so that they get teh biggest model improvement for their $/effort/time
+- Data discovery with Catalog: Load all historical Model inference to Labelbox. The seamless integration , so that they get teh biggest model improvement for their $/effort/time
 
 ### Data Modality
 Image Object Detection
@@ -22,7 +22,7 @@ Image Object Detection
 - [Labelbox SDK/Webhooks](https://docs.labelbox.com/docs/webhooks)  
 - [VertexAI SDK](https://cloud.google.com/python/docs/reference/aiplatform/latest)
 - [Google Cloud Functions](https://cloud.google.com/functions)
-- Future Considration: Vertex Pipelines
+- Future Consideration: Vertex Pipelines
 
 ### How it works
 Once the integration is set up, a model training sequence works as follows: 
