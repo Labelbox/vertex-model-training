@@ -13,7 +13,7 @@ Labelbox is designed to integrate with any Model Training or Pipeline backend.  
 - Integrated launch of Model Training from the Labelbox Interface. Labelbox becomes the IDE and data debugger for training data curation
 - Data Selection, whether to improve active learning cycle time, or prioritize production bugfix
 - Integrates with MLDLC and CI/CD pipelines
-- Data discovery with Catalog: Load all historical Model inference to Labelbox. The seamless integration , so that they get teh biggest model improvement for their $/effort/time
+- Data discovery with Catalog: Load all historical Model inference to Labelbox. The seamless integration , so that they get the biggest model improvement for their $/effort/time
 
 ### Data Modality
 Image Object Detection
