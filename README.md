@@ -42,7 +42,8 @@ Once the integration is set up, a model training sequence works as follows:
 
 - Install [GCloud Client commandline tool](https://cloud.google.com/sdk/docs/install)
 
-- Enable Service Usage API on your GCloud project
+- Enable **Service Usage API** and **Vertex AI API**
+ on your GCloud project
 
 - Authenticate GCloud in your terminal:
 
@@ -76,7 +77,7 @@ gcloud functions deploy models --entry-point models --runtime python37 --trigger
 
 
 
-1) Set up the train, monitor, and inference functions
+6) Set up the train, monitor, and inference functions
 
 - It will ask to you enable `artifactregistry.googleapis.com` and `run.googleapis.com` API services. 
 - Adjust the memory limits for your application for each function. 
@@ -118,7 +119,7 @@ export ETL_FUNCTION_URL=$(gcloud functions describe etl-function --gen2 | grep "
 gcloud functions deploy model_run --entry-point model_run --runtime python37 --trigger-http --allow-unauthenticated --timeout=540 --set-env-vars=etl_url=$ETL_FUNCTION_URL
 ```
 
-9) In the Labelbox Model run page and configure model training integration
+9) In the Labelbox Model run page, configure model training integration
 - go to your `models` function in the Google Cloud project, note the URL on the trigger tab will have something along the lines of `https://us-central1-GOOGLE_PROJECT.cloudfunctions.net/models` -- take note of the URL except for the `/models` suffix
 - In your Labelbox Model, add this URL in the URL field on the `Settings` > `Model Training` section (example is `https://us-central1-GOOGLE_PROJECT.cloudfunctions.net/` in this case). If using Cloud Functions in this approach, no secret key is necessary. 
 -  Now you can execute model training from Labelbox. Note that this protocol creates a Google Bucket, so if you run it again, you'll have to rename your Google Vertex Model Name and Google Cloud Storage Bucket by rerunning the `gcloud` command line for the `etl-function`.

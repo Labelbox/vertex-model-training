@@ -26,7 +26,7 @@ def inference_function(request):
     
     # Configure environment    
     model = aiplatform.Model.list(filter=f'display_name={model_name}')[0]    
-    lb_client = Client(lb_api_key)
+    lb_client = Client(lb_api_key, enable_experimental=True)
     model_run = lb_client._get_single(ModelRun, lb_model_run_id)
     
     # Select model type       
