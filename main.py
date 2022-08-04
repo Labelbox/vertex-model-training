@@ -201,9 +201,10 @@ def etl_function(request):
     # Configure environment
     lb_client = get_lb_client(lb_api_key)
     gcs_client = get_gcs_client(google_project)
-    try:
+    bucket_names = [bucket.name for bucket in gcs_client.list_buckets()]
+    if gcs_bucket in bucket_names :
         bucket = gcs_client.get_bucket(gcs_bucket)
-    except Exception as e : 
+    else: 
         print(f"Bucket does not exsit, will create one with name {gcs_bucket}")
         bucket = gcs_client.create_bucket(gcs_bucket, location = gcs_region) 
     gcs_key = create_gcs_key(lb_model_run_id)  
