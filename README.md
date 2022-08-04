@@ -83,7 +83,7 @@ gcloud functions deploy models --entry-point models --runtime python37 --trigger
 - Adjust the memory limits for your application for each function. 
 
 ```
-gcloud beta functions deploy train-function --gen2 --entry-point train_function --runtime python38 --trigger-http --allow-unauthenticated --timeout=3600  --memory=2048MB
+gcloud beta functions deploy train-function --gen2 --entry-point train_function --runtime python38 --trigger-http --allow-unauthenticated --timeout=3600  --memory=8192MB
 
 gcloud functions deploy monitor-function --entry-point monitor_function --runtime python37 --trigger-http --allow-unauthenticated --timeout=540
 
@@ -109,7 +109,7 @@ export LB_API_KEY="<LB_API_KEY>"
 
 
 ```
-gcloud beta functions deploy etl-function --gen2 --entry-point etl_function --runtime python38 --trigger-http --allow-unauthenticated --timeout=3600 --set-env-vars=lb_api_key=$LB_API_KEY,gcs_region=$GCS_REGION,gcs_bucket=$GCS_BUCKET,model_name=$MODEL_NAME,google_project=$GOOGLE_PROJECT,train_url=$TRAIN_FUNCTION_URL,monitor_url=$MONITOR_FUNCTION_URL,inference_url=$INFERENCE_FUNCTION_URL,  --memory=4096MB
+gcloud beta functions deploy etl-function --gen2 --entry-point etl_function --runtime python38 --trigger-http --allow-unauthenticated --timeout=3600 --set-env-vars=lb_api_key=$LB_API_KEY,gcs_region=$GCS_REGION,gcs_bucket=$GCS_BUCKET,model_name=$MODEL_NAME,google_project=$GOOGLE_PROJECT,train_url=$TRAIN_FUNCTION_URL,monitor_url=$MONITOR_FUNCTION_URL,inference_url=$INFERENCE_FUNCTION_URL --memory=8192MB
 ```
 
 8) Deploy the /model_run endpoint 
