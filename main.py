@@ -26,7 +26,7 @@ def inference_function(request):
     
     # Configure environment    
     model = aiplatform.Model.list(filter=f'display_name={model_name}')[0]    
-    lb_client = Client(lb_api_key)
+    lb_client = Client(lb_api_key, enable_experimental=True)
     model_run = lb_client._get_single(ModelRun, lb_model_run_id)
     
     # Select model type       
@@ -196,10 +196,16 @@ def etl_function(request):
     train_url = env_vars('train_url')
     monitor_url = env_vars('monitor_url')
     inference_url = env_vars('inference_url')    
+    gcs_region = env_vars('gcs_region')
     
     # Configure environment
     lb_client = get_lb_client(lb_api_key)
-    bucket = get_gcs_client(google_project).create_bucket(gcs_bucket, location = 'US-CENTRAL1') 
+    gcs_client = get_gcs_client(google_project)
+    try:
+        bucket = gcs_client.get_bucket(gcs_bucket)
+    except Exception as e : 
+        print(f"Bucket does not exsit, will create one with name {gcs_bucket}")
+        bucket = gcs_client.create_bucket(gcs_bucket, location = gcs_region) 
     gcs_key = create_gcs_key(lb_model_run_id)  
     model_run = lb_client._get_single(ModelRun, lb_model_run_id)
 
