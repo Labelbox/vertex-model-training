@@ -11,20 +11,20 @@ def create_training_job(model_name: str, vertex_dataset, model_run_id):
     """  
     vertex_model_id = str(model_name) + "-" + str(model_run_id)
     job = aiplatform.AutoMLImageTrainingJob(
-    display_name = model_name,
-    prediction_type = "classification",
-    multi_label = False,
-    model_type = "MOBILE_TF_VERSATILE_1"
+        display_name = model_name,
+        prediction_type = "classification",
+        multi_label = False,
+        model_type = "MOBILE_TF_VERSATILE_1"
     )
     model = job.run(
-    dataset = vertex_dataset,
-    sync = False,
-    model_id = vertex_model_id,
-    model_display_name = model_name,
-    budget_milli_node_hours = 20000,
-    training_filter_split = "labels.aiplatform.googleapis.com/ml_use=training",
-    validation_filter_split = "labels.aiplatform.googleapis.com/ml_use=validation",
-    test_filter_split = "labels.aiplatform.googleapis.com/ml_use=test"
+        dataset = vertex_dataset,
+        sync = False,
+        model_id = vertex_model_id,
+        model_display_name = model_name,
+        budget_milli_node_hours = 20000,
+        training_filter_split = "labels.aiplatform.googleapis.com/ml_use=training",
+        validation_filter_split = "labels.aiplatform.googleapis.com/ml_use=validation",
+        test_filter_split = "labels.aiplatform.googleapis.com/ml_use=test"
     )
     return model, vertex_model_id
 
