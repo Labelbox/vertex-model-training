@@ -95,7 +95,7 @@ gcloud beta functions deploy inference-function --gen2 --entry-point inference_f
 ```
 export TRAIN_FUNCTION_URL=$(gcloud functions describe train-function --gen2 | grep "uri: " | cut  -c 8-) 
 export INFERENCE_FUNCTION_URL=$(gcloud functions describe inference-function --gen2 | grep "uri: " | cut  -c 8-)
-export MONITOR_FUNCTION_URL=$(gcloud functions describe monitor-function | grep "url: " | cut  -c 8-)
+export MONITOR_FUNCTION_URL=$(gcloud functions describe monitor-function | grep " url: " | cut  -c 8-)
 
 export GCS_BUCKET="<GCS_BUCKET>"
 export GCS_REGION="us-central1"
