@@ -109,7 +109,7 @@ export LB_API_KEY="<LB_API_KEY>"
 
 
 ```
-gcloud beta functions deploy etl-function --gen2 --entry-point etl_function --runtime python38 --trigger-http --allow-unauthenticated --timeout=3600 --set-env-vars=lb_api_key=$LB_API_KEY,gcs_region=$GCS_REGION,gcs_bucket=$GCS_BUCKET,model_name=$MODEL_NAME,google_project=$GOOGLE_PROJECT,train_url=$TRAIN_FUNCTION_URL,monitor_url=$MONITOR_FUNCTION_URL,inference_url=$INFERENCE_FUNCTION_URL,  --memory=4096MB
+gcloud beta functions deploy etl-function --gen2 --entry-point etl_function --runtime python38 --trigger-http --allow-unauthenticated --timeout=3600 --set-env-vars=lb_api_key=$LB_API_KEY,gcs_region=$GCS_REGION,gcs_bucket=$GCS_BUCKET,model_name=$MODEL_NAME,google_project=$GOOGLE_PROJECT,train_url=$TRAIN_FUNCTION_URL,monitor_url=$MONITOR_FUNCTION_URL,inference_url=$INFERENCE_FUNCTION_URL,  --memory=8192MB
 ```
 
 8) Deploy the /model_run endpoint 
@@ -131,7 +131,7 @@ If you changed the specifc python code in each of the entrypoint function, you s
 
 For instance, if you changed `etl_function` in main.py or any functions it calls, you should re-deploy it by calling this deploy command again. 
 ```
-gcloud beta functions deploy etl-function --gen2 --entry-point etl_function --runtime python38 --trigger-http --allow-unauthenticated --timeout=3600 --set-env-vars=lb_api_key=$LB_API_KEY,gcs_region=$GCS_REGION,gcs_bucket=$GCS_BUCKET,model_name=$MODEL_NAME,google_project=$GOOGLE_PROJECT,train_url=$TRAIN_FUNCTION_URL,monitor_url=$MONITOR_FUNCTION_URL,inference_url=$INFERENCE_FUNCTION_URL,  --memory=4096MB
+gcloud beta functions deploy etl-function --gen2 --entry-point etl_function --runtime python38 --trigger-http --allow-unauthenticated --timeout=3600 --set-env-vars=lb_api_key=$LB_API_KEY,gcs_region=$GCS_REGION,gcs_bucket=$GCS_BUCKET,model_name=$MODEL_NAME,google_project=$GOOGLE_PROJECT,train_url=$TRAIN_FUNCTION_URL,monitor_url=$MONITOR_FUNCTION_URL,inference_url=$INFERENCE_FUNCTION_URL,  --memory=8192MB
 
 ```
 
