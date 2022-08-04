@@ -8,7 +8,7 @@ def inference_function(request):
     """
     import json
     import uuid
-    from labelbox import Client, ModelRun
+    from labelbox import Client
     from labelbox.data.serialization import NDJsonConverter
     from google.cloud import aiplatform    
     from source_code.config import env_vars
@@ -24,34 +24,40 @@ def inference_function(request):
     lb_model_run_id = request_json['lb_model_run_id'] 
     model_type = request_json['model_type']
     
-    # Configure environment    
-    model = aiplatform.Model.list(filter=f'display_name={model_name}')[0]    
-    lb_client = Client(lb_api_key, enable_experimental=True)
-    model_run = lb_client._get_single(ModelRun, lb_model_run_id)
-    
-    # Select model type       
-    if model_type == "autoML_image_classification":
-        from source_code.autoML_image_classification.inference import batch_predict, get_options, process_predictions, export_model_run_labels, compute_metrics
-    elif model_type == "custom_image_classification":
-        from source_code.custom_image_classification.inference import batch_predict, get_options, process_predictions, export_model_run_labels, compute_metrics
-    
-    # Code execution    
-    prediction_job = batch_predict(etl_file, model, lb_model_run_id, "radio")
-    print('Predictions generated. Converting predictions into Labelbox format.')
-    options = get_options(model_run.model_id, lb_client)
-    annotation_data = process_predictions(prediction_job, options)
-    predictions = list(NDJsonConverter.deserialize(annotation_data))
-    print('Predictions reformatted. Exporting ground truth labels from model run.')
-    labels = export_model_run_labels(lb_client, lb_model_run_id, 'image')
-    print('Computing metrics.')    
-    predictions_with_metrics = compute_metrics(labels, predictions, options)
-    content = list(NDJsonConverter.serialize(predictions_with_metrics))
-    print(content)
-    print('Metrics computed. Uploading predictions and metrics to model run.')   
-    upload_task = model_run.add_predictions(f'diagnostics-import-{uuid.uuid4()}', content)
-    print(upload_task.statuses)
-    model_run.update_status("COMPLETE")  
-    print('Inference job complete.')
+    try:
+        # Configure environment    
+        model = aiplatform.Model.list(filter=f'display_name={model_name}')[0]    
+        lb_client = Client(lb_api_key, enable_experimental=True)
+        model_run = lb_client.get_model_run(lb_model_run_id)
+
+        # Select model type       
+        if model_type == "autoML_image_classification":
+            from source_code.autoML_image_classification.inference import batch_predict, get_options, process_predictions, export_model_run_labels, compute_metrics
+        elif model_type == "custom_image_classification":
+            from source_code.custom_image_classification.inference import batch_predict, get_options, process_predictions, export_model_run_labels, compute_metrics
+
+        # Code execution    
+        prediction_job = batch_predict(etl_file, model, lb_model_run_id, "radio")
+        print('Predictions generated. Converting predictions into Labelbox format.')
+        options = get_options(model_run.model_id, lb_client)
+        annotation_data = process_predictions(prediction_job, options)
+        predictions = list(NDJsonConverter.deserialize(annotation_data))
+        print('Predictions reformatted. Exporting ground truth labels from model run.')
+        labels = export_model_run_labels(lb_client, lb_model_run_id, 'image')
+        print('Computing metrics.')    
+        predictions_with_metrics = compute_metrics(labels, predictions, options)
+        content = list(NDJsonConverter.serialize(predictions_with_metrics))
+        print(content)
+        print('Metrics computed. Uploading predictions and metrics to model run.')   
+        upload_task = model_run.add_predictions(f'diagnostics-import-{uuid.uuid4()}', content)
+        print(upload_task.statuses)
+        model_run.update_status("COMPLETE")  
+        print('Inference job complete.')
+
+    except:
+        lb_client = Client(lb_api_key, enable_experimental=True)
+        model_run = lb_client.get_model_run(lb_model_run_id)
+        model_run.update_status("FAILED") 
     
     return "Inference Job"
 
@@ -75,37 +81,50 @@ def monitor_function(request):
     request_json = json.loads(request_bytes)    
     
     # Parse data from trigger    
+    lb_api_key = request_json['lb_api_key']    
     model_name = request_json["model_name"]
+    lb_model_run_id = request_json['lb_model_run_id']    
     inference_url = request_json["inference_url"]
     monitor_url = request_json["monitor_url"]
     model_type = request_json['model_type']
 
-    # Select model type    
-    if model_type == "autoML_image_classification":
-        training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name={model_name}')[0]
-    elif model_type == "custom_image_classification":
-        training_job = aiplatform.CustomTrainingJob.list(filter=f'display_name={model_name}')[0]
-    
-    # Code execution    
-    time.sleep(300)
-    job_state = str(training_job.state)
-    completed_states = [
-        "PipelineState.PIPELINE_STATE_FAILED",
-        "PipelineState.PIPELINE_STATE_CANCELLED",
-        "PipelineState.PIPELINE_STATE_PAUSED",
-        "PipelineState.PIPELINE_STATE_CANCELLING"
-    ]
-    print(f'Current Job State: {job_state}')    
+    try:
+        # Configure environment
+        lb_client = Client(lb_api_key)
+        
+        # Select model type    
+        if model_type == "autoML_image_classification":
+            training_job = aiplatform.AutoMLImageTrainingJob.list(filter=f'display_name={model_name}')[0]
+        elif model_type == "custom_image_classification":
+            training_job = aiplatform.CustomTrainingJob.list(filter=f'display_name={model_name}')[0]
 
-    # Trigger model training monitor function or model training inference function  
-    if job_state == "PipelineState.PIPELINE_STATE_SUCCEEDED":
-        print('Training compete, sent to inference.')
-        requests.post(inference_url, data=request_bytes)
-    elif job_state in completed_states:
-        print("Training failed, terminating deployment.")
-    else:
-        print('Training incomplete, will check again in 5 minutes.')
-        requests.post(monitor_url, data=request_bytes)
+        # Code execution    
+        time.sleep(300)
+        job_state = str(training_job.state)
+        completed_states = [
+            "PipelineState.PIPELINE_STATE_FAILED",
+            "PipelineState.PIPELINE_STATE_CANCELLED",
+            "PipelineState.PIPELINE_STATE_PAUSED",
+            "PipelineState.PIPELINE_STATE_CANCELLING"
+        ]
+        print(f'Current Job State: {job_state}')    
+
+        # Trigger model training monitor function or model training inference function  
+        if job_state == "PipelineState.PIPELINE_STATE_SUCCEEDED":
+            print('Training compete, sent to inference.')
+            requests.post(inference_url, data=request_bytes)
+        elif job_state in completed_states:
+            print("Training failed, terminating deployment.")
+            model_run = lb_client.get_model_run(lb_model_run_id)
+            model_run.update_status("FAILED")
+        else:
+            print('Training incomplete, will check again in 5 minutes.')
+            requests.post(monitor_url, data=request_bytes)
+
+    except:
+        lb_client = Client(lb_api_key)
+        model_run = lb_client.get_model_run(lb_model_run_id)
+        model_run.update_status("FAILED")            
 
     return "Monitor Job"
 
@@ -135,27 +154,32 @@ def train_function(request):
     model_name = request_json['model_name']
     monitor_url = request_json['monitor_url']
     model_type = request_json['model_type']
-    
-    # Configure environment
-    lb_client = get_lb_client(lb_api_key)
-    model_run = lb_client._get_single(ModelRun, lb_model_run_id)
 
-    # Select model type
-    if model_type == "autoML_image_classification":
-        from source_code.autoML_image_classification.train import create_vertex_dataset, create_training_job
-    elif model_type == "custom_image_classification":
-        from source_code.custom_image_classification.train import create_vertex_dataset, create_training_job 
+    try:
+        # Configure environment
+        lb_client = get_lb_client(lb_api_key)
+        model_run = lb_client._get_single(ModelRun, lb_model_run_id)
+        # Select model type
+        if model_type == "autoML_image_classification":
+            from source_code.autoML_image_classification.train import create_vertex_dataset, create_training_job
+        elif model_type == "custom_image_classification":
+            from source_code.custom_image_classification.train import create_vertex_dataset, create_training_job 
+
+        # Code execution
+        vertex_dataset = create_vertex_dataset(lb_model_run_id, etl_file)
+        vertex_model, vertex_model_id = create_training_job(model_name, vertex_dataset, lb_model_run_id)
+        model_run.update_status("TRAINING_MODEL")    
+        print('Training launched, sent to monitor function.')                                                              
+        print(f"Job Name: {lb_model_run_id}")
+        print(f'Vertex Model ID: {vertex_model_id}')
+
+        # Trigger model training monitor function
+        requests.post(monitor_url, data=request_bytes)
     
-    # Code execution
-    vertex_dataset = create_vertex_dataset(lb_model_run_id, etl_file)
-    vertex_model, vertex_model_id = create_training_job(model_name, vertex_dataset, lb_model_run_id)
-    model_run.update_status("TRAINING_MODEL")    
-    print('Training launched, sent to monitor function.')                                                              
-    print(f"Job Name: {lb_model_run_id}")
-    print(f'Vertex Model ID: {vertex_model_id}')
-    
-    # Trigger model training monitor function
-    requests.post(monitor_url, data=request_bytes)
+    except:
+        lb_client = get_lb_client(lb_api_key)
+        model_run = lb_client.get_model_run(lb_model_run_id)
+        model_run.update_status("FAILED")    
     
     return "Train Job"
 
@@ -198,47 +222,53 @@ def etl_function(request):
     inference_url = env_vars('inference_url')    
     gcs_region = env_vars('gcs_region')
     
-    # Configure environment
-    lb_client = get_lb_client(lb_api_key)
-    gcs_client = get_gcs_client(google_project)
     try:
-        bucket = gcs_client.get_bucket(gcs_bucket)
-    except Exception as e : 
-        print(f"Bucket does not exsit, will create one with name {gcs_bucket}")
-        bucket = gcs_client.create_bucket(gcs_bucket, location = gcs_region) 
-    gcs_key = create_gcs_key(lb_model_run_id)  
-    model_run = lb_client._get_single(ModelRun, lb_model_run_id)
+        # Configure environment
+        lb_client = get_lb_client(lb_api_key)
+        gcs_client = get_gcs_client(google_project)
+        try:
+            bucket = gcs_client.get_bucket(gcs_bucket)
+        except Exception as e : 
+            print(f"Bucket does not exsit, will create one with name {gcs_bucket}")
+            bucket = gcs_client.create_bucket(gcs_bucket, location = gcs_region) 
+        gcs_key = create_gcs_key(lb_model_run_id)  
+        model_run = lb_client._get_single(ModelRun, lb_model_run_id)
 
-    # Select model type
-    if model_type == "autoML_image_classification":
-        from source_code.autoML_image_classification.etl import etl_job, upload_ndjson_data
-    elif model_type == "custom_image_classification":
-        from source_code.custom_image_classification.etl import etl_job, upload_ndjson_data
+        # Select model type
+        if model_type == "autoML_image_classification":
+            from source_code.autoML_image_classification.etl import etl_job, upload_ndjson_data
+        elif model_type == "custom_image_classification":
+            from source_code.custom_image_classification.etl import etl_job, upload_ndjson_data
+
+        # Code execution
+        print("Beginning ETL")
+        model_run.update_status("EXPORTING_DATA")
+        json_data = etl_job(lb_client, lb_model_run_id, bucket)
+        model_run.update_status("PREPARING_DATA")    
+        etl_file = upload_ndjson_data(json_data, bucket, gcs_key)
+        print(f'ETL File: {etl_file}')
+
+        # Trigger model training function  
+        post_dict = {
+            "model_type" : model_type,
+            "lb_model_id" : lb_model_id,
+            "lb_model_run_id" : lb_model_run_id,
+            "etl_file" : etl_file,
+            "lb_api_key" : lb_api_key,
+            "google_project" : google_project,
+            "model_name" : model_name,
+            "train_url" : train_url,
+            "monitor_url" : monitor_url,
+            "inference_url" : inference_url
+        }
+        post_bytes = json.dumps(post_dict).encode('utf-8')
+        requests.post(post_dict['train_url'], data=post_bytes)
+        print(f"ETL Complete. Training Job Initiated.")
     
-    # Code execution
-    print("Beginning ETL")
-    model_run.update_status("EXPORTING_DATA")
-    json_data = etl_job(lb_client, lb_model_run_id, bucket)
-    model_run.update_status("PREPARING_DATA")    
-    etl_file = upload_ndjson_data(json_data, bucket, gcs_key)
-    print(f'ETL File: {etl_file}')
-    
-    # Trigger model training function  
-    post_dict = {
-        "model_type" : model_type,
-        "lb_model_id" : lb_model_id,
-        "lb_model_run_id" : lb_model_run_id,
-        "etl_file" : etl_file,
-        "lb_api_key" : lb_api_key,
-        "google_project" : google_project,
-        "model_name" : model_name,
-        "train_url" : train_url,
-        "monitor_url" : monitor_url,
-        "inference_url" : inference_url
-    }
-    post_bytes = json.dumps(post_dict).encode('utf-8')
-    requests.post(post_dict['train_url'], data=post_bytes)
-    print(f"ETL Complete. Training Job Initiated.")
+    except:
+        lb_client = get_lb_client(lb_api_key)
+        model_run = lb_client.get_model_run(lb_model_run_id)
+        model_run.update_status("FAILED")
     
     return "ETL Job"
 
