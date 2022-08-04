@@ -51,7 +51,7 @@ Once the integration is set up, a model training sequence works as follows:
 gcloud auth login
 ``` 
 
-- [Recommended] Configure gcloud config:
+- [Recommended] Configure gcloud config: (example region - "us-central1")
 
 ```
 gcloud config set project PROJECT_ID
