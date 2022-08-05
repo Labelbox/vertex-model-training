@@ -228,9 +228,9 @@ def etl_function(request):
         gcs_client = get_gcs_client(google_project)
         try:
             bucket = gcs_client.get_bucket(gcs_bucket)
-        except Exception as e : 
+        except: 
             print(f"Bucket does not exsit, will create one with name {gcs_bucket}")
-            bucket = gcs_client.create_bucket(gcs_bucket, location = gcs_region) 
+            bucket = gcs_client.create_bucket(gcs_bucket, location=gcs_region) 
         gcs_key = create_gcs_key(lb_model_run_id)  
         model_run = lb_client._get_single(ModelRun, lb_model_run_id)
 
