@@ -197,39 +197,39 @@ def etl_function(request):
     train_url = request_json['train_url']
     gcs_region = request_json['gcs_region']
     lb_model_run_id = request_json['lb_model_run_id']
+    model_type = request_json["model_type"]
     
     # Configure environment
     lb_client = get_lb_client(lb_api_key)
     gcs_client = get_gcs_client(google_project)   
     model_run = lb_client.get_model_run(lb_model_run_id)
     
-#     try:
-    # Select model type
-    if model_type == "autoML_image_classification":
-        from source_code.autoML_image_classification.etl import etl_job, upload_ndjson_data
-    elif model_type == "custom_image_classification":
-        from source_code.custom_image_classification.etl import etl_job, upload_ndjson_data   
-    # Code execution      
-    print("Beginning ETL")     
-    model_run.update_status("PREPARING_DATA")   
-    gcs_key = create_gcs_key(lb_model_run_id)
     try:
-        bucket = gcs_client.get_bucket(gcs_bucket)
-    except: 
-        print(f"Bucket does not exsit, will create one with name {gcs_bucket}")
-        bucket = gcs_client.create_bucket(gcs_bucket, location=gcs_region)
-    json_data = etl_job(lb_client, lb_model_run_id, bucket)
-    etl_file = upload_ndjson_data(json_data, bucket, gcs_key)
-    print(f'ETL File: {etl_file}')
-    # Trigger model training function  
-    request_json.update({"etl_file" : etl_file})
-    post_bytes = json.dumps(request_json).encode('utf-8')
-    requests.post(train_url, data=post_bytes)
-    print(f"ETL Complete. Training Job Initiated.")
-#     except:
-#         print("ETL Function Failed. Check your configuration and try again.")
-#         model_run.update_status("FAILED")
-    
+        # Select model type
+        if model_type == "autoML_image_classification":
+            from source_code.autoML_image_classification.etl import etl_job, upload_ndjson_data
+        elif model_type == "custom_image_classification":
+            from source_code.custom_image_classification.etl import etl_job, upload_ndjson_data   
+        # Code execution      
+        print("Beginning ETL")     
+        model_run.update_status("PREPARING_DATA")   
+        gcs_key = create_gcs_key(lb_model_run_id)
+        try:
+            bucket = gcs_client.get_bucket(gcs_bucket)
+        except: 
+            print(f"Bucket does not exsit, will create one with name {gcs_bucket}")
+            bucket = gcs_client.create_bucket(gcs_bucket, location=gcs_region)
+        json_data = etl_job(lb_client, lb_model_run_id, bucket)
+        etl_file = upload_ndjson_data(json_data, bucket, gcs_key)
+        print(f'ETL File: {etl_file}')
+        # Trigger model training function  
+        request_json.update({"etl_file" : etl_file})
+        post_bytes = json.dumps(request_json).encode('utf-8')
+        requests.post(train_url, data=post_bytes)
+        print(f"ETL Complete. Training Job Initiated.")
+    except:
+        print("ETL Function Failed. Check your configuration and try again.")
+        model_run.update_status("FAILED")
     return "ETL Job"
 
 def model_run(request):
