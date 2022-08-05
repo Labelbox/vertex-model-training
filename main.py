@@ -191,11 +191,11 @@ def etl_function(request):
     request_json = json.loads(request_bytes)
     
     # Read environment variables   
-    lb_api_key = post_dict["lb_api_key"]
-    google_project = post_dict["google_project"]
-    gcs_bucket = post_dict['gcs_bucket']
-    train_url = post_dict['train_url']
-    gcs_region = post_dict['gcs_region']
+    lb_api_key = request_json["lb_api_key"]
+    google_project = request_json["google_project"]
+    gcs_bucket = request_json['gcs_bucket']
+    train_url = request_json['train_url']
+    gcs_region = request_json['gcs_region']
     
     # Configure environment
     lb_client = get_lb_client(lb_api_key)
@@ -221,8 +221,8 @@ def etl_function(request):
         etl_file = upload_ndjson_data(json_data, bucket, gcs_key)
         print(f'ETL File: {etl_file}')
         # Trigger model training function  
-        post_dict.update({"etl_file" : etl_file})
-        post_bytes = json.dumps(post_dict).encode('utf-8')
+        request_json.update({"etl_file" : etl_file})
+        post_bytes = json.dumps(request_json).encode('utf-8')
         requests.post(train_url, data=post_bytes)
         print(f"ETL Complete. Training Job Initiated.")
     except:
