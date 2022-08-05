@@ -256,6 +256,7 @@ def model_run(request):
             "lb_model_id" : lb_model_id,
             "lb_model_run_id" : lb_model_run_id,
             "gcs_bucket" : env_vars("gcs_bucket"),
+            "gcs_region" : env_vars("gcs_region"),
             "lb_api_key" : env_vars("lb_api_key"),
             "google_project" : env_vars("google_project"),
             "model_name" : env_vars("model_name"),
