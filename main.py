@@ -203,32 +203,32 @@ def etl_function(request):
     gcs_client = get_gcs_client(google_project)   
     model_run = lb_client.get_model_run(lb_model_run_id)
     
+#     try:
+    # Select model type
+    if model_type == "autoML_image_classification":
+        from source_code.autoML_image_classification.etl import etl_job, upload_ndjson_data
+    elif model_type == "custom_image_classification":
+        from source_code.custom_image_classification.etl import etl_job, upload_ndjson_data   
+    # Code execution      
+    print("Beginning ETL")     
+    model_run.update_status("PREPARING_DATA")   
+    gcs_key = create_gcs_key(lb_model_run_id)
     try:
-        # Select model type
-        if model_type == "autoML_image_classification":
-            from source_code.autoML_image_classification.etl import etl_job, upload_ndjson_data
-        elif model_type == "custom_image_classification":
-            from source_code.custom_image_classification.etl import etl_job, upload_ndjson_data   
-        # Code execution      
-        print("Beginning ETL")     
-        model_run.update_status("PREPARING_DATA")   
-        gcs_key = create_gcs_key(lb_model_run_id)
-        try:
-            bucket = gcs_client.get_bucket(gcs_bucket)
-        except: 
-            print(f"Bucket does not exsit, will create one with name {gcs_bucket}")
-            bucket = gcs_client.create_bucket(gcs_bucket, location=gcs_region)
-        json_data = etl_job(lb_client, lb_model_run_id, bucket)
-        etl_file = upload_ndjson_data(json_data, bucket, gcs_key)
-        print(f'ETL File: {etl_file}')
-        # Trigger model training function  
-        request_json.update({"etl_file" : etl_file})
-        post_bytes = json.dumps(request_json).encode('utf-8')
-        requests.post(train_url, data=post_bytes)
-        print(f"ETL Complete. Training Job Initiated.")
-    except:
-        print("ETL Function Failed. Check your configuration and try again.")
-        model_run.update_status("FAILED")
+        bucket = gcs_client.get_bucket(gcs_bucket)
+    except: 
+        print(f"Bucket does not exsit, will create one with name {gcs_bucket}")
+        bucket = gcs_client.create_bucket(gcs_bucket, location=gcs_region)
+    json_data = etl_job(lb_client, lb_model_run_id, bucket)
+    etl_file = upload_ndjson_data(json_data, bucket, gcs_key)
+    print(f'ETL File: {etl_file}')
+    # Trigger model training function  
+    request_json.update({"etl_file" : etl_file})
+    post_bytes = json.dumps(request_json).encode('utf-8')
+    requests.post(train_url, data=post_bytes)
+    print(f"ETL Complete. Training Job Initiated.")
+#     except:
+#         print("ETL Function Failed. Check your configuration and try again.")
+#         model_run.update_status("FAILED")
     
     return "ETL Job"
 
@@ -250,30 +250,30 @@ def model_run(request):
     lb_model_run_id = request_json['modelRunId']
     model_type = request_json['modelType']    
     
-#     try:
-    # Structure config variable json
-    post_dict = {
-        "model_type" : model_type,
-        "lb_model_id" : lb_model_id,
-        "lb_model_run_id" : lb_model_run_id,
-        "gcs_bucket" : env_vars("gcs_bucket"),
-        "gcs_region" : env_vars("gcs_region"),
-        "lb_api_key" : env_vars("lb_api_key"),
-        "google_project" : env_vars("google_project"),
-        "model_name" : env_vars("model_name"),
-        "train_url" : env_vars("train_url"),
-        "monitor_url" : env_vars("monitor_url"),
-        "inference_url" : env_vars("inference_url")
-    }
-    post_bytes = json.dumps(post_dict).encode('utf-8')
-    # Update model run status
-    lb_client = get_lb_client(post_dict["lb_api_key"])
-    model_run = lb_client.get_model_run(lb_model_run_id)
-    model_run.update_status("EXPORTING_DATA")
-    # Send data to ETL Function
-    requests.post(env_vars("etl_url"), data=post_bytes)
-#     except:
-#         print("Model Run Function Failed. Check your Environment Variables and try again.")
+    try:
+        # Structure config variable json
+        post_dict = {
+            "model_type" : model_type,
+            "lb_model_id" : lb_model_id,
+            "lb_model_run_id" : lb_model_run_id,
+            "gcs_bucket" : env_vars("gcs_bucket"),
+            "gcs_region" : env_vars("gcs_region"),
+            "lb_api_key" : env_vars("lb_api_key"),
+            "google_project" : env_vars("google_project"),
+            "model_name" : env_vars("model_name"),
+            "train_url" : env_vars("train_url"),
+            "monitor_url" : env_vars("monitor_url"),
+            "inference_url" : env_vars("inference_url")
+        }
+        post_bytes = json.dumps(post_dict).encode('utf-8')
+        # Update model run status
+        lb_client = get_lb_client(post_dict["lb_api_key"])
+        model_run = lb_client.get_model_run(lb_model_run_id)
+        model_run.update_status("EXPORTING_DATA")
+        # Send data to ETL Function
+        requests.post(env_vars("etl_url"), data=post_bytes)
+    except:
+        print("Model Run Function Failed. Check your Environment Variables and try again.")
     return "Rerouting to ETL"
 
 def models(request):
