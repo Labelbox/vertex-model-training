@@ -196,6 +196,7 @@ def etl_function(request):
     gcs_bucket = request_json['gcs_bucket']
     train_url = request_json['train_url']
     gcs_region = request_json['gcs_region']
+    lb_model_run_id = request_json['lb_model_run_id']
     
     # Configure environment
     lb_client = get_lb_client(lb_api_key)
