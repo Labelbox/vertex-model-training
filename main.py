@@ -230,9 +230,12 @@ def etl_function(request):
             bucket = gcs_client.get_bucket(gcs_bucket)
         except: 
             print(f"Bucket does not exsit, will create one with name {gcs_bucket}")
-            bucket = gcs_client.create_bucket(gcs_bucket, location=gcs_region) 
-        gcs_key = create_gcs_key(lb_model_run_id)  
-        model_run = lb_client._get_single(ModelRun, lb_model_run_id)
+            bucket = gcs_client.create_bucket(gcs_bucket, location=gcs_region)
+        try:
+            gcs_key = create_gcs_key(lb_model_run_id)  
+            model_run = lb_client._get_single(ModelRun, lb_model_run_id)
+        except:
+            print(f"Failed to initiate Labelbox Client. Please check your API Key.")
 
         # Select model type
         if model_type == "autoML_image_classification":
@@ -266,6 +269,7 @@ def etl_function(request):
         print(f"ETL Complete. Training Job Initiated.")
     
     except:
+        print("ETL Function Failed. Check your configuration and try again.")
         lb_client = get_lb_client(lb_api_key)
         model_run = lb_client.get_model_run(lb_model_run_id)
         model_run.update_status("FAILED")
