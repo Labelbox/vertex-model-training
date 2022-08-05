@@ -73,6 +73,7 @@ def monitor_function(request):
     import requests
     import json
     import time
+    from labelbox import Client
     from google.cloud import aiplatform
     from source_code.config import env_vars 
     
