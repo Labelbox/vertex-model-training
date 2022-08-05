@@ -264,7 +264,7 @@ def model_run(request):
         }
         post_bytes = json.dumps(post_dict).encode('utf-8')
         # Update model run status
-        lb_client = get_lb_client(lb_api_key)
+        lb_client = get_lb_client(post_dict["lb_api_key"])
         model_run = lb_client.get_model_run(lb_model_run_id)
         model_run.update_status("EXPORTING_DATA")
         # Send data to ETL Function
