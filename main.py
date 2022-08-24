@@ -285,7 +285,7 @@ def model_run(request):
             MODEL_SAVE_DIR = env_vars("MODEL_SAVE_DIR")
             
             # Set up aiplatform
-            aiplatform.init(project=GCS_PROJECT, location=GCS_LOCATION, staging_bucket=GCS_BUCKET)  
+            aiplatform.init(project=GCS_PROJECT, location=GCS_REGION, staging_bucket=GCS_BUCKET)  
 
             # Encoded Training Parameters
             TRAIN_COMPUTE="n1-standard-4"
