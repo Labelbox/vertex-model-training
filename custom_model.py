@@ -296,8 +296,8 @@ def build_radio_ndjson(confidences, options, data_row_id, label_decoder):
     }
 
 
-def get_predictions(lb_model_id, model, data_by_split, label_decoder):
-    options = get_options(lb_model_id, client)
+def get_predictions(lb_model_id, model, data_by_split, lb_client, label_decoder):
+    options = get_options(lb_model_id, lb_client)
     predictions = []
     for split, data in data_by_split.items():
       results = []
@@ -317,44 +317,49 @@ if __name__ == "__main__":
     print(f'Connecting to Labelbox...')
     lb_client = Client(args.LB_API_KEY, enable_experimental=True)
     lb_model_run = lb_client.get_model_run(args.LB_MODEL_RUN_ID)
+    
+    try:
+        print("Successfully connected to Labelbox. Building custom model..")
+        strategy = specify_compute_strategy(args.DISTRIBUTE)    
+        print('num_replicas_in_sync = {}'.format(strategy.num_replicas_in_sync))
+        with strategy.scope():
+            tf_model = build_model(num_classes=3)
+            print(tf_model.summary)      
 
-    print("Successfully connected to Labelbox. Building custom model..")
-    strategy = specify_compute_strategy(args.DISTRIBUTE)    
-    print('num_replicas_in_sync = {}'.format(strategy.num_replicas_in_sync))
-    with strategy.scope():
-        tf_model = build_model(num_classes=3)
-        print(tf_model.summary)      
+        print("Custom model built. Exporting training data from Labelbox...")
+        lb_model_run.update_status("EXPORTING_DATA")
+        labels_generator = get_labels_for_model_run(lb_client, model_run_id=lb_model_run.uid, media_type="image", strip_subclasses=True)
 
-    print("Custom model built. Exporting training data from Labelbox...")
-    lb_model_run.update_status("EXPORTING_DATA")
-    labels_generator = get_labels_for_model_run(lb_client, model_run_id=lb_model_run.uid, media_type="image", strip_subclasses=True)
+        label_encoder = {
+            0: "waffles",
+            1: "pancakes",
+            2: "omelette",
+        }    
 
-    label_encoder = {
-        0: "waffles",
-        1: "pancakes",
-        2: "omelette",
-    }    
+        print("Export complete. Preparing data for training...")
+        lb_model_run.update_status("PREPARING_DATA")
+        x_train, y_train, x_test, y_test, x_val, y_val, data_row_ids_per_split = process_labels_in_threadpool(process_label, labels_generator, label_encoder)
+        train_data = tf.data.Dataset.from_tensor_slices((x_train, y_train))
+        train_data = train_data.batch(args.BATCH_SIZE)
 
-    print("Export complete. Preparing data for training...")
-    lb_model_run.update_status("PREPARING_DATA")
-    x_train, y_train, x_test, y_test, x_val, y_val, data_row_ids_per_split = process_labels_in_threadpool(process_label, labels_generator, label_encoder)
-    train_data = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-    train_data = train_data.batch(args.BATCH_SIZE)
+        print("Data prepared. Training model...")
+        lb_model_run.update_status("TRAINING_MODEL")
+        tf_history = tf_model.fit(train_data, epochs=args.EPOCHS)
 
-    print("Data prepared. Training model...")
-    lb_model_run.update_status("TRAINING_MODEL")
-    tf_history = tf_model.fit(train_data, epochs=args.EPOCHS)
+        label_decoder = {v: k for k, v in label_encoder.items()}  
 
-    label_decoder = {v: k for k, v in label_encoder.items()}  
+        print("Model training complete. Creating predictions with trained model...")
+        data_by_split = {"training": x_train, "validation": x_val, "test": x_test}
+        predictions = get_predictions(args.LB_MODEL_ID, tf_model, data_by_split, lb_client, label_decoder)
 
-    print("Model training complete. Creating predictions with trained model...")
-    data_by_split = {"training": x_train, "validation": x_val, "test": x_test}
-    predictions = get_predictions(args.LB_MODEL_ID, tf_model, data_by_split, label_decoder)
+        print(f"Uploading predictions to Laeblbox Model Run {lb_model_run.uid}")
+        task = lb_model_run.add_predictions("upload predictions", predictions)
+        print("prediction task errors:", task.errors)
 
-    print(f"Uploading predictions to Laeblbox Model Run {lb_model_run.uid}")
-    task = lb_model_run.add_predictions("upload predictions", predictions)
-    print("prediction task errors:", task.errors)
-
-    print("Done")
-    lb_model_run.update_status("COMPLETE")
-    tf_model.save(args.MODEL_SAVE_DIR)
+        print("Done")
+        lb_model_run.update_status("COMPLETE")
+        tf_model.save(args.MODEL_SAVE_DIR)
+    except Exception as e:
+        lb_model_run.update_status("FAILED")
+        print('Model Training Failed.')
+        print(e)
