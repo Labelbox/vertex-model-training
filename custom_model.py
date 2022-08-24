@@ -205,7 +205,7 @@ def process_labels_in_threadpool(process_fn: Callable[..., Dict[str, Any]], labe
         A list of results from the process_fn       
     """
     print('Processing Labels')
-    x_train, y_train,, x_val, y_val, x_test, y_test = [], [], [], [], [], []
+    x_train, y_train, x_val, y_val, x_test, y_test = [], [], [], [], [], []
     label_encoder = {
         "waffles": 0,
         "pancakes": 1,
