@@ -309,9 +309,9 @@ def model_run(request):
                 "--LB_MODEL_ID=" + LB_MODEL_ID,
                 "--LB_MODEL_RUN_ID=" + LB_MODEL_RUN_ID,
                 "--EPOCHS=" + EPOCHS,
-                "--BATCH_SIZE" + BATCH_SIZE,
+                "--BATCH_SIZE=" + BATCH_SIZE,
                 "--DISTRIBUTE=" + DISTRIBUTE,
-                "--MODEL_SAVE_DIR" + MODEL_SAVE_DIR
+                "--MODEL_SAVE_DIR=" + MODEL_SAVE_DIR
             ]
 
             # Execute custom job
