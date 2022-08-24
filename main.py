@@ -354,7 +354,7 @@ def model_run(request):
             model_run.update_status("EXPORTING_DATA")
             # Send data to ETL Function
             requests.post(ETL_URL, data=post_bytes)        
-        except Exception as e
+        except Exception as e:
             print("Model Run Function Failed. Check your Environment Variables and try again.")
             print(e)
     return
