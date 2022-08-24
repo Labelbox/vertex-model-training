@@ -31,7 +31,7 @@ parser.add_argument('--MODEL_SAVE_DIR', dest='MODEL_SAVE_DIR', type=str, help='W
 
 args = parser.parse_args()
 
-print(f"Labelbox model run id: {args.model_run_id}")
+print(f"Labelbox model run id: {args.LB_MODEL_RUN_ID}")
 print('Python Version = {}'.format(sys.version))
 print('TensorFlow Version = {}'.format(tf.__version__))
 print('TF_CONFIG = {}'.format(os.environ.get('TF_CONFIG', 'Not found')))
