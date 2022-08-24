@@ -277,6 +277,7 @@ def model_run(request):
     try:
         # Will trigger the custom model pipeline if the model_type has "custom" as a substring
         if "custom" in MODEL_TYPE.lower():
+            print("Custom Training Job")
             # Get custom environment variables
             EPOCHS = env_vars("EPOCHS")
             BATCH_SIZE = env_vars("BATCH_SIZE")
@@ -324,6 +325,7 @@ def model_run(request):
                 )
         # Otherwise, will begin the autoML pipeline
         else:
+            print("AutoML Training Job")
             ETL_URL = env_vars("ETL_URL")
             TRAIN_URL = env_vars("TRAIN_URL")
             MONITOR_URL = env_vars("MONITOR_URL")
