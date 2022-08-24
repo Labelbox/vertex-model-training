@@ -349,7 +349,7 @@ if __name__ == "__main__":
 
     print("Model training complete. Creating predictions with trained model...")
     data_by_split = {"training": x_train, "validation": x_val, "test": x_test}
-    predictions = get_predictions(args.MODEL_ID, tf_model, data_by_split, label_decoder)
+    predictions = get_predictions(args.LB_MODEL_ID, tf_model, data_by_split, label_decoder)
 
     print(f"Uploading predictions to Laeblbox Model Run {lb_model_run.uid}")
     task = lb_model_run.add_predictions("upload predictions", predictions)
