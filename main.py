@@ -273,10 +273,10 @@ def model_run(request):
     GCS_REGION = env_vars("GCS_REGION")
     GCS_PROJECT = env_vars("GCS_PROJECT")
     MODEL_NAME = env_vars("MODEL_NAME")
-
-    try:
-        # Will trigger the custom model pipeline if the model_type has "custom" as a substring
-        if "custom" in MODEL_TYPE.lower():
+    
+    if "custom" in MODEL_TYPE.lower():
+        try:
+            # Will trigger the custom model pipeline if the model_type has "custom" as a substring
             print("Custom Training Job")
             # Get custom environment variables
             EPOCHS = env_vars("EPOCHS")
@@ -323,8 +323,12 @@ def model_run(request):
                     accelerator_type=TRAIN_GPU.name,
                     accelerator_count=TRAIN_NGPU,
                 )
-        # Otherwise, will begin the autoML pipeline
-        else:
+        except:
+            print("Custom Model Run Failed. Check your Custom Training Code and Try Again.")
+            
+    # Otherwise, will begin the autoML pipeline
+    else:
+        try:
             print("AutoML Training Job")
             ETL_URL = env_vars("ETL_URL")
             TRAIN_URL = env_vars("TRAIN_URL")
@@ -349,8 +353,8 @@ def model_run(request):
             model_run.update_status("EXPORTING_DATA")
             # Send data to ETL Function
             requests.post(ETL_URL, data=post_bytes)        
-    except:
-        print("Model Run Function Failed. Check your Environment Variables and try again.")
+        except:
+            print("Model Run Function Failed. Check your Environment Variables and try again.")
     return
 
 def models(request):
