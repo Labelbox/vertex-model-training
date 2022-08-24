@@ -323,8 +323,9 @@ def model_run(request):
                     accelerator_type=TRAIN_GPU.name,
                     accelerator_count=TRAIN_NGPU,
                 )
-        except:
+        except Exception as e:
             print("Custom Model Run Failed. Check your Custom Training Code and Try Again.")
+            print(e)
             
     # Otherwise, will begin the autoML pipeline
     else:
@@ -353,8 +354,9 @@ def model_run(request):
             model_run.update_status("EXPORTING_DATA")
             # Send data to ETL Function
             requests.post(ETL_URL, data=post_bytes)        
-        except:
+        except Exception as e
             print("Model Run Function Failed. Check your Environment Variables and try again.")
+            print(e)
     return
 
 def models(request):
