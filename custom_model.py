@@ -296,16 +296,16 @@ def build_radio_ndjson(confidences, options, data_row_id, label_decoder):
     }
 
 
-def get_predictions(lb_model_id, model, data_by_split, lb_client, label_decoder):
+def get_predictions(lb_model_id, model, data_by_split, lb_client, label_decoder, batch_size):
     options = get_options(lb_model_id, lb_client)
     predictions = []
     for split, data in data_by_split.items():
       results = []
-      for i in range(0, data.shape[0], BATCH_SIZE):
-        if (i+1)*BATCH_SIZE > data.shape[0]:
-          results.append(model.predict_on_batch(data[i*BATCH_SIZE:]))
+      for i in range(0, data.shape[0], batch_size):
+        if (i+1)*batch_size > data.shape[0]:
+          results.append(model.predict_on_batch(data[i*batch_size:]))
         else:
-          results.append(model.predict_on_batch(data[i*BATCH_SIZE: (i+1)*BATCH_SIZE]))
+          results.append(model.predict_on_batch(data[i*batch_size: (i+1)*batch_size]))
       results = np.concatenate(results, axis=0)
       for i, res in enumerate(results):
         data_row_id = data_row_ids_per_split[split][i]
@@ -350,7 +350,7 @@ if __name__ == "__main__":
 
         print("Model training complete. Creating predictions with trained model...")
         data_by_split = {"training": x_train, "validation": x_val, "test": x_test}
-        predictions = get_predictions(args.LB_MODEL_ID, tf_model, data_by_split, lb_client, label_decoder)
+        predictions = get_predictions(args.LB_MODEL_ID, tf_model, data_by_split, lb_client, label_decoder, args.BATCH_SIZE)
 
         print(f"Uploading predictions to Laeblbox Model Run {lb_model_run.uid}")
         task = lb_model_run.add_predictions("upload predictions", predictions)
@@ -359,6 +359,7 @@ if __name__ == "__main__":
         print("Done")
         lb_model_run.update_status("COMPLETE")
         tf_model.save(args.MODEL_SAVE_DIR)
+        
     except Exception as e:
         lb_model_run.update_status("FAILED")
         print('Model Training Failed.')
