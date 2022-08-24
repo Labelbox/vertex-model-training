@@ -357,5 +357,4 @@ if __name__ == "__main__":
 
     print("Done")
     lb_model_run.update_status("COMPLETE")
-    MODEL_SAVE_DIR = os.getenv("AIP_MODEL_SAVE_DIR")
-    tf_model.save(MODEL_SAVE_DIR)
+    tf_model.save(args.MODEL_SAVE_DIR)
