@@ -154,12 +154,12 @@ def process_label(label: Label, resize_w=256, resize_h=256) -> Dict[str, Any]:
         raise InvalidLabelException(
             "Skipping example. Must provide <= 1 classification per image.")
     elif len(classifications) == 0:
-        classification = 'no_label'
+        label_name = 'no_label'
     else:
-        classification = classifications[0]
+        label_name = classifications[0]
     split = label.extra.get("Data Split")
     data_row_id = label.data.uid
-    return image_np_array, classification, split, data_row_id
+    return image_np_array, label_name, split, data_row_id
 
 
 def get_image_np_array(image_url: str, resize_w=256, resize_h=256) -> Optional[Tuple[Image, Tuple[int, int]]]:
@@ -194,23 +194,18 @@ def _download_image(image_url: str) -> Image:
     return load_image(BytesIO(requests.get(image_url).content))
 
 
-def process_labels_in_threadpool(process_fn: Callable[..., Dict[str, Any]], labels: List[Label], label_encoder: dict, *args, max_workers=8) -> List[Dict[str, Any]]:
+def process_labels_in_threadpool(process_fn, labels, label_encoder, max_workers=8):
     """ Function for running etl processing in parallel
     Args:
-        process_fn: Function to execute in parallel. Should accept Label as the first param and then any optional number of args.
-        labels: List of labels to process
-        args: Args that are passed through to the process_fn
-        max_workers: How many threads should be used
+        process_fn          :       Function to execute in parallel. Should accept Label as the first param and then any optional number of args.
+        labels              :       List of labels to process
+        label_encoder       :       Dictionary where key=label_name, value=encoded model output value
+        max_workers         :       How many threads should be used
     Returns:
         A list of results from the process_fn       
     """
     print('Processing Labels')
     x_train, y_train, x_val, y_val, x_test, y_test = [], [], [], [], [], []
-    label_encoder = {
-        "waffles": 0,
-        "pancakes": 1,
-        "omelette": 2,
-    }
     data_row_ids_per_split = {
         "training": [],
         "test": [],
@@ -222,16 +217,16 @@ def process_labels_in_threadpool(process_fn: Callable[..., Dict[str, Any]], labe
         filter_count = {'labels': 0, 'data_rows': 0}
         for future in as_completed(training_data_futures):
             try:
-                image_arr, classification_str, split, data_row_id = future.result()
+                image_arr, label_name, split, data_row_id = future.result()
                 if split == "training":
                     x_train.append(image_arr)
-                    y_train.append(label_encoder[classification_str])
+                    y_train.append(label_encoder[label_name])
                 elif split == "test":
                     x_test.append(image_arr)
-                    y_test.append(label_encoder[classification_str])
+                    y_test.append(label_encoder[label_name])
                 elif split == "validation":
                     x_val.append(image_arr)
-                    y_val.append(label_encoder[classification_str])
+                    y_val.append(label_encoder[label_name])
                 # keep data row ids so that we can upload predictions back later
                 data_row_ids_per_split[split].append(data_row_id)
             except InvalidDataRowException:
@@ -247,8 +242,7 @@ def process_labels_in_threadpool(process_fn: Callable[..., Dict[str, Any]], labe
 
     return x_train, y_train, x_test, y_test, x_val, y_val, data_row_ids_per_split
 
-
-def get_options(model_id, lb_client):
+def map_model_ontology(model_id, lb_client):
     """ Creates a dictionary where key = classification_option : value = { feature_schema_id, parent_feature_schema_id, type } from a Labelbox Ontology
     Args:
         model_id        :       Labelbox Model ID to pull an ontology from
@@ -261,55 +255,103 @@ def get_options(model_id, lb_client):
             model(where: {id: $modelId}) {ontologyId}}
         """, {'modelId': model_id})['model']['ontologyId']
     ontology = lb_client.get_ontology(ontology_id)
-    classifications = ontology.classifications()
-    options_dict = {}
-    for classification in classifications:
-        for option in classification.options:
-            options_dict.update({
-                f"{option.value}": {
-                    "feature_schema_id": option.feature_schema_id,
-                    "parent_feature_schema_id": classification.feature_schema_id,
-                    "type": classification.class_type.value
-            }
-        })
-    return options_dict
+    feature_map = map_features(ontology.normalized)
+    return feature_map
 
+def map_features(ontology_normalized):
+  """ Given an ontology, returns a dictionary where the key = featureSchemaId and value = [node_name, color, type, encoded_value] or a Pandas DataFrame
+  Args:
+    ontology_normalized   :   Queried from a project using project.ontology().normalized
+    export_type           :   Either "index" or "dataframe"
+  Returns:
+    Dictionary where key = node_name and values = encoded_layer, parent_name, parent_feature_schema_id, feature_schema_id, type  
+  """
+  feature_map = {}
+  tools = ontology_normalized["tools"]
+  classifications = ontology_normalized["classifications"]
+  if tools:
+    feature_map, nested_layer = layer_iterator(feature_map, tools)
+  if classifications:
+    feature_map, nested_layer = layer_iterator(feature_map, classifications)
+  return feature_map
 
-def build_radio_ndjson(confidences, options, data_row_id, label_decoder):
+def layer_iterator(feature_map, node_layer, parent_feature_schema_id=None, parent_name=None):
+  """ Iterative function to create a lookup for each node in a node_layer
+  Args:
+    feature_map                     :       building dictionary where node_name is the key
+    node_layer                      :       list of normalized ontology dictionaries
+    parent_feature_schema_id        :       parent feature schema id
+    parent_name                     :       parent node name
+  Returns:
+    Either recursively calls this function for a nested layer, or returns the updated feature_map
+  """
+  for count, node in enumerate(node_layer):
+    node_feature_schema_id = node['featureSchemaId']
+    if "tool" in node.keys(): # Catches Tools
+      node_type = node["tool"]
+      node_name = node["name"]
+      next_layer = node["classifications"]
+    elif "instructions" in node.keys(): # Catches Classifications
+      node_type = node["type"]
+      node_name = node["instructions"]
+      next_layer = node["options"]
+    else: # Catches options
+      node_name = node["label"]
+      if "options" in node.keys(): # Catches Options with Nested Classifications
+        next_layer = node["options"]
+        node_type = "branch_option"
+      else: # Catches Options with no Nested Classificaitons
+        next_layer = []
+        node_type = "leaf_option"
+    # Appends this list to our building DataFrame
+    feature_map.update(
+        {node_name : {
+         "encoded_value" : count,
+         "parent_name" : parent_name, 
+         "parent_feature_schema_id" : parent_feature_schema_id, 
+         "feature_schema_id" : node_feature_schema_id,
+         "type" : node_type, 
+        }
+      }
+    )
+    if next_layer:
+      feature_map, nested_layer = layer_iterator(feature_map, next_layer, node_feature_schema_id, node_name) 
+  return feature_map, next_layer
+
+def build_radio_ndjson(confidences, feature_map, data_row_id, label_decoder):
     """
     Args:
     Returns:
     """
 
-    argmax = np.argmax(confidences)
-    predicted = label_decoder[argmax]
+    predicted_value = np.argmax(confidences)
+    predicted_label = label_decoder[predicted_value]
 
     return {
         "uuid": str(uuid.uuid4()),
         "answer": {
-            'schemaId': options[predicted]['feature_schema_id']
+            'schemaId': feature_map[predicted_label]['feature_schema_id']
         },
         'dataRow': {
             "id": data_row_id
         },
-        "schemaId": options[predicted]['parent_feature_schema_id']
+        "schemaId": feature_map[predicted_label]['parent_feature_schema_id']
     }
 
 
-def get_predictions(lb_model_id, model, data_by_split, lb_client, label_decoder, batch_size):
-    options = get_options(lb_model_id, lb_client)
+def get_predictions(lb_model_id, model, data_by_split, lb_ontology_index, label_decoder, batch_size):
     predictions = []
     for split, data in data_by_split.items():
-      results = []
-      for i in range(0, data.shape[0], batch_size):
-        if (i+1)*batch_size > data.shape[0]:
-          results.append(model.predict_on_batch(data[i*batch_size:]))
+      prediction_values = []
+      for i in range(0, len(shape), batch_size):
+        if i+batch_size > len(shape):
+            prediction_values.append(model.predict_on_batch(data[i:]))
         else:
-          results.append(model.predict_on_batch(data[i*batch_size: (i+1)*batch_size]))
-      results = np.concatenate(results, axis=0)
-      for i, res in enumerate(results):
+            prediction_values.append(model.predict_on_batch(data[i:i+batch_size]))
+      prediction_values = np.concatenate(prediction_values, axis=0)
+      for i, prediction_value in enumerate(prediction_values):
         data_row_id = data_row_ids_per_split[split][i]
-        predictions.append(build_radio_ndjson(res, options, data_row_id, label_decoder))
+        predictions.append(build_radio_ndjson(prediction_value, lb_ontology_index, data_row_id, label_decoder))
     return predictions
 
 if __name__ == "__main__":
@@ -328,13 +370,15 @@ if __name__ == "__main__":
 
         print("Custom model built. Exporting training data from Labelbox...")
         lb_model_run.update_status("EXPORTING_DATA")
+        lb_ontology_index = map_model_ontology(model_id, lb_client)
+        
+        label_encoder = {}
+        for name in lb_ontology_index.keys():
+            if lb_ontology_index[name]['parent_name'] == "Food":
+                label_encoder[name] = lb_ontology_index[name]['encoded_value']
+        label_decoder = {v: k for k, v in label_encoder.items()}  
+                         
         labels_generator = get_labels_for_model_run(lb_client, model_run_id=lb_model_run.uid, media_type="image", strip_subclasses=True)
-
-        label_encoder = {
-            0: "waffles",
-            1: "pancakes",
-            2: "omelette",
-        }    
 
         print("Export complete. Preparing data for training...")
         lb_model_run.update_status("PREPARING_DATA")
@@ -345,8 +389,6 @@ if __name__ == "__main__":
         print("Data prepared. Training model...")
         lb_model_run.update_status("TRAINING_MODEL")
         tf_history = tf_model.fit(train_data, epochs=args.EPOCHS)
-
-        label_decoder = {v: k for k, v in label_encoder.items()}  
 
         print("Model training complete. Creating predictions with trained model...")
         data_by_split = {"training": x_train, "validation": x_val, "test": x_test}
