@@ -290,7 +290,6 @@ def model_run(request):
             TRAIN_COMPUTE="n1-standard-4"
             TRAIN_GPU = aiplatform.gapic.AcceleratorType.NVIDIA_TESLA_K80
             TRAIN_NGPU = 1 
-            TRAIN_STRATEGY = "single" # single GPU 
             TRAIN_CONTAINER_IMG = "gcr.io/cloud-aiplatform/training/tf-gpu.2-1:latest" 
             DEPLOY_CONTAINTER_IMG = "gcr.io/cloud-aiplatform/training/tf-gpu.2-1:latest" 
 
