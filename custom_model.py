@@ -272,7 +272,7 @@ def get_options(model_id, lb_client):
                     "type": classification.class_type.value
             }
         })
-    return options
+    return options_dict
 
 
 def build_radio_ndjson(confidences, options, data_row_id, label_decoder):
