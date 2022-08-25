@@ -412,9 +412,9 @@ if __name__ == "__main__":
         bucket_save_name = "gs://"+args.MODEL_SAVE_DIR+"/"+args.MODEL_NAME+"_"+args.LB_MODEL_RUN_ID+".h5"
         tf_model.save(tmp_save_name)
         
-        with file_io.FileIO(tmp_save_name, model='rb') as if:
-            with file_io.FileIO(bucket_save_name, mode='wb+') as of:
-                of.write(if.read())
+        with file_io.FileIO(tmp_save_name, model='rb') as i_f:
+            with file_io.FileIO(bucket_save_name, mode='wb+') as o_f:
+                o_f.write(i_f.read())
         
     except Exception as e:
         lb_model_run.update_status("FAILED")
