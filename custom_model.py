@@ -394,7 +394,7 @@ if __name__ == "__main__":
 
         print("Data prepared. Training model...")
         lb_model_run.update_status("TRAINING_MODEL")
-        tf_history = tf_model.fit(train_data, epochs=args.EPOCHS, batch_size=args.BATCH_SIZE)
+        tf_history = tf_model.fit(train_data, epochs=args.EPOCHS)
 
         print("Model training complete. Creating predictions with trained model...")
         data_by_split = {"training": x_train, "validation": x_val, "test": x_test}
