@@ -367,7 +367,7 @@ if __name__ == "__main__":
     lb_model_run = lb_client.get_model_run(args.LB_MODEL_RUN_ID)
     
     try:
-        lb_ontology_index = map_model_ontology(model_id, lb_client)
+        lb_ontology_index = map_model_ontology(args.LB_MODEL_ID, lb_client)
         label_encoder = {}
         for name in lb_ontology_index.keys():
             if lb_ontology_index[name]['parent_name'] == "Food": ## PARENT NAME THAT WE'RE RUNNING PREDICTIONS ON
