@@ -233,48 +233,132 @@ def etl_function(request):
     return "ETL Job"
 
 def model_run(request):
-    """ Reroutes the webhook trigger to the ETL function
+    """ Will trigger a training job is the substring "custom" is in the model type field, otherwise will trigger the ETL cloud function
     Args:
-        etl_url             :           URL that will trigger the etl function
+        ** All Training Jobs **
+        LB_API_KEY      :       Labelbox API KEY
+        GCS_BUCKET      :       Bucketr to get or create to store trained model
+        GCS_REGION      :       Example: "us-central1"
+        GCS_PROJECT     :       Name of the GCS project this cloud function is in
+        MODEL_NAME      :       Name to give the training job - should be unique
+        
+        ** AutoML Training Jobs **
+        ETL_URL         :       URL to trigger the ETL Cloud Function
+        TRAIN_URL       :       URL to trigger the Train Cloud Function
+        MONITOR_URL     :       URL to trigger the Monitor Cloud Function
+        INFERENCE_URL   :       URL to trigger the Inference Cloud Function
+
+        ** Custom Training Jobs **
+        EPOCHS          :       Number of epochs to train the model on
+        BATCH_SIZE      :       Training data batch size
+        DISTRIBUTE      :       Training strategy - either "single", "mirror", or "multi"
+        MODEL_SAVE_DIR  :       Where to save the trained model to
     """
-    import requests
-    import json
+    from google.cloud import aiplatform
     from source_code.config import env_vars, get_lb_client
+    import json
 
     # Receive data from trigger   
     request_bytes = request.get_data()
     request_json = json.loads(request_bytes)
-    
+
     # Parse data from trigger    
-    lb_model_id = request_json['modelId']
-    lb_model_run_id = request_json['modelRunId']
-    model_type = request_json['modelType']    
+    LB_MODEL_ID = request_json['modelId']
+    LB_MODEL_RUN_ID = request_json['modelRunId']
+    MODEL_TYPE = request_json['modelType']  
+
+    # Get environment variables
+    LB_API_KEY = env_vars("LB_API_KEY")
+    GCS_BUCKET = env_vars("GCS_BUCKET")
+    GCS_REGION = env_vars("GCS_REGION")
+    GCS_PROJECT = env_vars("GCS_PROJECT")
+    MODEL_NAME = env_vars("MODEL_NAME")
     
-    try:
-        # Structure config variable json
-        post_dict = {
-            "model_type" : model_type,
-            "lb_model_id" : lb_model_id,
-            "lb_model_run_id" : lb_model_run_id,
-            "gcs_bucket" : env_vars("gcs_bucket"),
-            "gcs_region" : env_vars("gcs_region"),
-            "lb_api_key" : env_vars("lb_api_key"),
-            "google_project" : env_vars("google_project"),
-            "model_name" : env_vars("model_name"),
-            "train_url" : env_vars("train_url"),
-            "monitor_url" : env_vars("monitor_url"),
-            "inference_url" : env_vars("inference_url")
-        }
-        post_bytes = json.dumps(post_dict).encode('utf-8')
-        # Update model run status
-        lb_client = get_lb_client(post_dict["lb_api_key"])
-        model_run = lb_client.get_model_run(lb_model_run_id)
-        model_run.update_status("EXPORTING_DATA")
-        # Send data to ETL Function
-        requests.post(env_vars("etl_url"), data=post_bytes)
-    except:
-        print("Model Run Function Failed. Check your Environment Variables and try again.")
-    return "Rerouting to ETL"
+    if "custom" in MODEL_TYPE.lower():
+        try:
+            # Will trigger the custom model pipeline if the model_type has "custom" as a substring
+            print("Custom Training Job")
+            # Get custom environment variables
+            EPOCHS = env_vars("EPOCHS")
+            BATCH_SIZE = env_vars("BATCH_SIZE")
+            DISTRIBUTE = env_vars("DISTRIBUTE") 
+            MODEL_SAVE_DIR = env_vars("MODEL_SAVE_DIR")
+            
+            # Set up aiplatform
+            aiplatform.init(project=GCS_PROJECT, location=GCS_REGION, staging_bucket=GCS_BUCKET)  
+
+            # Encoded Training Parameters
+            TRAIN_COMPUTE="n1-standard-4"
+            TRAIN_GPU = aiplatform.gapic.AcceleratorType.NVIDIA_TESLA_K80
+            TRAIN_NGPU = 1 
+            TRAIN_CONTAINER_IMG = "gcr.io/cloud-aiplatform/training/tf-gpu.2-1:latest" 
+            DEPLOY_CONTAINTER_IMG = "gcr.io/cloud-aiplatform/training/tf-gpu.2-1:latest" 
+
+            # Set up training job based on custom_model.py
+            job = aiplatform.CustomTrainingJob(
+                    display_name=MODEL_NAME,
+                    script_path='custom_model.py',
+                    requirements=["labelbox[data]", "google-cloud-aiplatform"],
+                    container_uri=TRAIN_CONTAINER_IMG, 
+                    model_serving_container_image_uri=DEPLOY_CONTAINTER_IMG,
+                )
+            
+            # Structure arguments for custom_model.py
+            CMDARGS = [
+                "--LB_API_KEY=" + LB_API_KEY, 
+                "--LB_MODEL_ID=" + LB_MODEL_ID,
+                "--LB_MODEL_RUN_ID=" + LB_MODEL_RUN_ID,
+                "--EPOCHS=" + EPOCHS,
+                "--BATCH_SIZE=" + BATCH_SIZE,
+                "--DISTRIBUTE=" + DISTRIBUTE,
+                "--MODEL_SAVE_DIR=" + MODEL_SAVE_DIR,
+                "--MODEL_NAME=" + MODEL_NAME
+            ]
+
+            # Execute custom job
+            model = job.run(
+                    model_display_name=MODEL_NAME,
+                    args=CMDARGS,
+                    replica_count=1,
+                    machine_type=TRAIN_COMPUTE,
+                    accelerator_type=TRAIN_GPU.name,
+                    accelerator_count=TRAIN_NGPU,
+                )
+        except Exception as e:
+            print("Custom Model Run Failed. Check your Custom Training Code and Try Again.")
+            print(e)
+            
+    # Otherwise, will begin the autoML pipeline
+    else:
+        try:
+            print("AutoML Training Job")
+            ETL_URL = env_vars("ETL_URL")
+            TRAIN_URL = env_vars("TRAIN_URL")
+            MONITOR_URL = env_vars("MONITOR_URL")
+            INFERENCE_URL = env_vars("INFERENCE_URL")
+            post_dict = {
+                "model_type" : MODEL_TYPE,
+                "lb_model_id" : LB_MODEL_ID,
+                "lb_model_run_id" : LB_MODEL_RUN_ID,
+                "gcs_bucket" : GCS_BUCKET,
+                "gcs_region" : GCS_REGION,
+                "lb_api_key" : LB_API_KEY,
+                "google_project" : GCS_PROJECT,
+                "model_name" : MODEL_NAME,
+                "train_url" : TRAIN_URL,
+                "monitor_url" : MONITOR_URL, 
+                "inference_url" : INFERENCE_URL
+            }        
+            post_bytes = json.dumps(post_dict).encode('utf-8')
+            lb_client = get_lb_client(post_dict["lb_api_key"])
+            model_run = lb_client.get_model_run(post_dict['lb_model_run_id'])
+            model_run.update_status("EXPORTING_DATA")
+            # Send data to ETL Function
+            requests.post(ETL_URL, data=post_bytes)        
+        except Exception as e:
+            print("Model Run Function Failed. Check your Environment Variables and try again.")
+            print(e)
+    return
 
 def models(request):
     """ Serves a list of model options in the Labelbox UI
