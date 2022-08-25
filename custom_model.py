@@ -407,7 +407,6 @@ if __name__ == "__main__":
 
         print("Done")
         lb_model_run.update_status("COMPLETE")
-        from tensorflow.python.lib.io import file_io
         
         tmp_save_name = "/tmp/model.h5"
         bucket_save_name = "gs://"+args.MODEL_SAVE_DIR+"/"+args.MODEL_NAME+"_"+args.LB_MODEL_RUN_ID+".h5"
