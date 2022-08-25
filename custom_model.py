@@ -7,6 +7,7 @@ import tensorflow as tf
 from tensorflow.python.client import device_lib
 from tensorflow.keras.utils import to_categorical
 from google.api_core.retry import Retry
+from tensorflow.python.lib.io import file_io
 
 from PIL.Image import Image, open as load_image, DecompressionBombError
 import requests
