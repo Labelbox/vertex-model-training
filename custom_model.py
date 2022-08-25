@@ -406,7 +406,6 @@ if __name__ == "__main__":
 
         print("Done")
         lb_model_run.update_status("COMPLETE")
-        x = datetime.datetime.now()
         save_name = "gs://"+args.MODEL_SAVE_DIR+"/"+args.MODEL_NAME+"_"+args.LB_MODEL_RUN_ID+".h5"
         tf_model.save(save_name)
         
