@@ -370,7 +370,7 @@ if __name__ == "__main__":
         lb_ontology_index = map_model_ontology(args.LB_MODEL_ID, lb_client)
         label_encoder = {}
         for name in lb_ontology_index.keys():
-            if lb_ontology_index[name]['parent_name'] == "Food Type": ## PARENT NAME THAT WE'RE RUNNING PREDICTIONS ON
+            if lb_ontology_index[name]['type'] == "leaf_option":
                 label_encoder[name] = lb_ontology_index[name]['encoded_value']
         label_decoder = {v: k for k, v in label_encoder.items()}         
         
