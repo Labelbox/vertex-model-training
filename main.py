@@ -311,7 +311,7 @@ def model_run(request):
                 "--EPOCHS=" + EPOCHS,
                 "--BATCH_SIZE=" + BATCH_SIZE,
                 "--DISTRIBUTE=" + DISTRIBUTE,
-                "--MODEL_SAVE_DIR=" + MODEL_SAVE_DIR
+                "--MODEL_SAVE_DIR=" + MODEL_SAVE_DIR,
                 "--MODEL_NAME=" + MODEL_NAME
             ]
 
