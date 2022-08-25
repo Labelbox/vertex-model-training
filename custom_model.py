@@ -406,8 +406,15 @@ if __name__ == "__main__":
 
         print("Done")
         lb_model_run.update_status("COMPLETE")
-        save_name = "gs://"+args.MODEL_SAVE_DIR+"/"+args.MODEL_NAME+"_"+args.LB_MODEL_RUN_ID+".h5"
-        tf_model.save(save_name)
+        from tensorflow.python.lib.io import file_io
+        
+        tmp_save_name = "/tmp/model.h5"
+        bucket_save_name = "gs://"+args.MODEL_SAVE_DIR+"/"+args.MODEL_NAME+"_"+args.LB_MODEL_RUN_ID+".h5"
+        tf_model.save(tmp_save_name)
+        
+        with file_io.FileIO(tmp_save_name, model='rb') as if:
+            with file_io.FileIO(bucket_save_name, mode='wb+') as of:
+                of.write(if.read())
         
     except Exception as e:
         lb_model_run.update_status("FAILED")
