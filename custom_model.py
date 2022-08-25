@@ -187,7 +187,7 @@ def _download_image(image_url: str) -> Image:
     return load_image(BytesIO(requests.get(image_url).content))
 
 
-def process_labels_in_threadpool(process_fn, labels, label_encoder, max_workers=8):
+def process_labels_in_threadpool(process_fn, labels, label_encoder, *args, max_workers=8):
     """ Function for running etl processing in parallel
     Args:
         process_fn          :       Function to create training data in parallel - first argument is the label
