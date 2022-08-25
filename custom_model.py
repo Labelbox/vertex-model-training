@@ -199,7 +199,7 @@ def process_labels_in_threadpool(process_fn, labels, label_encoder, max_workers=
     """
     print('Processing Labels')
     x_train, y_train, x_val, y_val, x_test, y_test = [], [], [], [], [], []
-    input_data = []
+    data_row_id_input = {}
     with ThreadPoolExecutor(max_workers=max_workers) as exc:
         training_data_futures = (exc.submit(
             process_fn, label, *args) for label in labels)
@@ -217,7 +217,7 @@ def process_labels_in_threadpool(process_fn, labels, label_encoder, max_workers=
                     x_val.append(image_arr)
                     y_val.append(label_encoder[label_name])
                 # Dictionary where {key=data_row_id : value=input data as numpy array}
-                input_data.append({data_row_id : image_arr})
+                data_row_id_input[data_row_id]['input_data'] = image_arr
             except InvalidDataRowException:
                 filter_count['data_rows'] += 1
             except InvalidLabelException:
@@ -229,7 +229,7 @@ def process_labels_in_threadpool(process_fn, labels, label_encoder, max_workers=
 
     print('Label Processing Complete')
 
-    return x_train, y_train, x_test, y_test, x_val, y_val, input_data
+    return x_train, y_train, x_test, y_test, x_val, y_val, data_row_id_input
 
 def map_model_ontology(model_id, lb_client):
     """ Creates a dictionary where key = classification_option : value = { feature_schema_id, parent_feature_schema_id, type } from a Labelbox Ontology
@@ -308,32 +308,31 @@ def layer_iterator(feature_map, node_layer, parent_feature_schema_id=None, paren
   return feature_map, next_layer
 
 
-def get_predictions(tf_model, input_data, lb_ontology_index, label_decoder, batch_size):
+def get_predictions(tf_model, data_row_id_input, lb_ontology_index, label_decoder, batch_size):
     """ Given a tensorflow model and input data by split, will create predictions and return Labelbox-ready list of predictions to upload
     Args:
         tf_model                :       tf.keras.Model object
-        input_data              :       List of dictionaries where {key=data_row_id : value=input for tf_model}
+        data_row_id_input       :       Dictionary where {key=data_row_id : value='input_data'}
         lb_ontology_index       :       Dictionary where {key=class_name : value={'feature_schema_id', 'parent_feature_schema_id'}}
         label_decoder           :       Dictionary where {key=encoded_value : value=class_name} 
         batch_size              :       Number of data rows to run predictions on in the same batch
     Returns:
         List of ndjsons to upload to labelbox
     """
+    data_row_ids = []
     predictions = []
     for i in range(0, len(input_data), batch_size):
+        batch_input_data = []
         if i+batch_size > len(shape):
-            prediction_values.append(tf_model.predict_on_batch(data[i:]))
+            end = len(input_data)
         else:
-            prediction_values.append(tf_model.predict_on_batch(data[i:i+batch_size]))        
-    prediction_data = list(data_rows_predictions.keys())
-    for data_row_id in enumerate(:
-        
-      prediction_values = []
-      for i in range(0, len(shape), batch_size):
-
-      prediction_values = np.concatenate(prediction_values, axis=0)
-      for i, prediction_value in enumerate(prediction_values):
-        data_row_id = data_row_ids_per_split[split][i]
+            end = i + batch_size
+        for key in sorted(input_data)[i:end]:
+            data_row_ids.append(key)
+            batch_input_data.append(input_data[key]['input_data'])
+        prediction_values.append(tf_model.predict_on_batch(batch_input_data))
+    for count, prediction_value in enumerate(prediction_values):
+        data_row_id = data_row_ids[count]
         predictions.append(build_radio_ndjson(prediction_value, lb_ontology_index, data_row_id, label_decoder))
     return predictions
 
@@ -389,7 +388,7 @@ if __name__ == "__main__":
 
         print("Export complete. Preparing data for training...")
         lb_model_run.update_status("PREPARING_DATA")
-        x_train, y_train, x_test, y_test, x_val, y_val, data_rows_predictions = process_labels_in_threadpool(process_label, labels_generator, label_encoder)
+        x_train, y_train, x_test, y_test, x_val, y_val, data_row_id_input = process_labels_in_threadpool(process_label, labels_generator, label_encoder)
         train_data = tf.data.Dataset.from_tensor_slices((x_train, y_train))
         train_data = train_data.batch(args.BATCH_SIZE)
 
@@ -399,7 +398,7 @@ if __name__ == "__main__":
 
         print("Model training complete. Creating predictions with trained model...")
         data_by_split = {"training": x_train, "validation": x_val, "test": x_test}
-        predictions = get_predictions(args.LB_MODEL_ID, tf_model, data_rows_predictions, lb_client, label_decoder, args.BATCH_SIZE)
+        predictions = get_predictions(args.LB_MODEL_ID, tf_model, data_row_id_input, lb_client, label_decoder, args.BATCH_SIZE)
 
         print(f"Uploading predictions to Laeblbox Model Run {lb_model_run.uid}")
         task = lb_model_run.add_predictions("upload predictions", predictions)
