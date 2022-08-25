@@ -42,7 +42,7 @@ def specify_compute_strategy(distribute_value):
     Args:
         distribute_value (str)      :       Either "single", "mirror" or "multi"
     Returns
-        tensorflow.distribute strategy
+        tf.distribute strategy
     """
     # Single Machine, single compute device
     if distribute_value == 'single':
@@ -63,30 +63,34 @@ def build_model(num_classes):
     Args:
         num_classes     :       Number of classes in your new ontology
     Returns:
-        tf.kkeras.Model object
+        tf.keras.Model object
     """
     # In this example, we will finetune a InceptionV3 with imagenet pre-trained weights
-    # create the base pre-trained model
+    # Freeze the pre-trained model
     base_model = tf.keras.applications.InceptionV3(
-        weights='imagenet', include_top=False)
-    # add a global spatial average pooling layer
+        include_top=False, # We'll add some of our own layers instead
+        weights='imagenet'
+    )
     x = base_model.output
+    # Pooling Layer
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
-    # let's add a fully-connected layer
+    # Fully connected layer
     x = tf.keras.layers.Dense(1024, activation='relu')(x)
-    # and a logistic layer -- map to number of classes
+    # Output layer
     predictions = tf.keras.layers.Dense(num_classes, activation='softmax')(x)
+
+    # Put the model together
     model = tf.keras.Model(inputs=base_model.input, outputs=predictions)
 
-    # Train only the top layers (which were randomly initialized)
-    # i.e. freeze all pretrained convolutional InceptionV3 layers, and only finetune on the last 3 layers we added.
+    # Freeze the pre-trained weights
     for layer in base_model.layers:
-        layer.trainable = False
+        layer.trainable = False    
 
-    # compile the model (should be done *after* setting layers to non-trainable)
+    # Compile the model (should be done *after* setting layers to non-trainable)
     model.compile(
-        loss=tf.keras.losses.categorical_crossentropy,
-        optimizer=tf.keras.optimizers.SGD(learning_rate=0.001),
+        loss=tf.keras.losses.CategoricalCrossentropy(),
+        optimizer=tf.keras.optimizers.Adam(),
+        metrics=tf.keras.metrics.Accuracy()
     )
     return model
 
@@ -217,7 +221,7 @@ def process_labels_in_threadpool(process_fn, labels, label_encoder, *args, max_w
                     x_val.append(image_arr)
                     y_val.append(label_encoder[label_name])
                 # Dictionary where {key=data_row_id : value=input data as numpy array}
-                data_row_id_input[data_row_id]['input_data'] = image_arr
+                data_row_id_input[data_row_id] = image_arr
             except InvalidDataRowException:
                 filter_count['data_rows'] += 1
             except InvalidLabelException:
@@ -307,35 +311,6 @@ def layer_iterator(feature_map, node_layer, parent_feature_schema_id=None, paren
       feature_map, nested_layer = layer_iterator(feature_map, next_layer, node_feature_schema_id, node_name) 
   return feature_map, next_layer
 
-
-def get_predictions(tf_model, data_row_id_input, lb_ontology_index, label_decoder, batch_size):
-    """ Given a tensorflow model and input data by split, will create predictions and return Labelbox-ready list of predictions to upload
-    Args:
-        tf_model                :       tf.keras.Model object
-        data_row_id_input       :       Dictionary where {key=data_row_id : value='input_data'}
-        lb_ontology_index       :       Dictionary where {key=class_name : value={'feature_schema_id', 'parent_feature_schema_id'}}
-        label_decoder           :       Dictionary where {key=encoded_value : value=class_name} 
-        batch_size              :       Number of data rows to run predictions on in the same batch
-    Returns:
-        List of ndjsons to upload to labelbox
-    """
-    data_row_ids = []
-    predictions = []
-    for i in range(0, len(input_data), batch_size):
-        batch_input_data = []
-        if i+batch_size > len(shape):
-            end = len(input_data)
-        else:
-            end = i + batch_size
-        for key in sorted(input_data)[i:end]:
-            data_row_ids.append(key)
-            batch_input_data.append(input_data[key]['input_data'])
-        prediction_values.append(tf_model.predict_on_batch(batch_input_data))
-    for count, prediction_value in enumerate(prediction_values):
-        data_row_id = data_row_ids[count]
-        predictions.append(build_radio_ndjson(prediction_value, lb_ontology_index, data_row_id, label_decoder))
-    return predictions
-
 def build_radio_ndjson(confidences, feature_map, data_row_id, label_decoder):
     """
     Args:
@@ -360,6 +335,31 @@ def build_radio_ndjson(confidences, feature_map, data_row_id, label_decoder):
         "schemaId": feature_map[predicted_label]['parent_feature_schema_id']
     }
 
+def get_predictions(tf_model, data_row_id_input, lb_ontology_index, label_decoder, batch_size):
+    """ Given a tensorflow model and input data by split, will create predictions and return Labelbox-ready list of predictions to upload
+    Args:
+        tf_model                :       tf.keras.Model object
+        data_row_id_input       :       Dictionary where {key=data_row_id : value='input_data'}
+        lb_ontology_index       :       Dictionary where {key=class_name : value={'feature_schema_id', 'parent_feature_schema_id'}}
+        label_decoder           :       Dictionary where {key=encoded_value : value=class_name} 
+        batch_size              :       Number of data rows to run predictions on in the same batch
+    Returns:
+        List of ndjsons to upload to labelbox
+    """
+    predictions = []
+    confidences = []
+    data_row_ids = list(data_row_id_input.keys())
+    input_tensors = list(data_row_id_input.values())
+    for i in range(0, len(input_tensors), batch_size):
+      if i+batch_size > len(input_tensors):
+        batch_input = input_tensors[i:]
+      else:
+        batch_input = input_tensors[i:i+batch_size]
+      confidences.extend(tf_model.predict_on_batch(np.stack(batch_input)))
+    for i in range(0, len(confidences)):
+      predictions.append(build_radio_ndjson(confidences[i], lb_ontology_index, data_row_ids[i], label_decoder))
+    return predictions
+
 if __name__ == "__main__":
 
     print(f'Connecting to Labelbox...')
@@ -370,7 +370,7 @@ if __name__ == "__main__":
         lb_ontology_index = map_model_ontology(args.LB_MODEL_ID, lb_client)
         label_encoder = {}
         for name in lb_ontology_index.keys():
-            if lb_ontology_index[name]['parent_name'] == "Food": ## PARENT NAME THAT WE'RE RUNNING PREDICTIONS ON
+            if lb_ontology_index[name]['parent_name'] == "Food Type": ## PARENT NAME THAT WE'RE RUNNING PREDICTIONS ON
                 label_encoder[name] = lb_ontology_index[name]['encoded_value']
         label_decoder = {v: k for k, v in label_encoder.items()}         
         
@@ -394,11 +394,11 @@ if __name__ == "__main__":
 
         print("Data prepared. Training model...")
         lb_model_run.update_status("TRAINING_MODEL")
-        tf_history = tf_model.fit(train_data, epochs=args.EPOCHS)
+        tf_history = tf_model.fit(train_data, epochs=args.EPOCHS, batch_size=args.BATCH_SIZE)
 
         print("Model training complete. Creating predictions with trained model...")
         data_by_split = {"training": x_train, "validation": x_val, "test": x_test}
-        predictions = get_predictions(args.LB_MODEL_ID, tf_model, data_row_id_input, lb_client, label_decoder, args.BATCH_SIZE)
+        predictions = get_predictions(tf_model, data_row_id_input, lb_ontology_index, label_decoder, args.BATCH_SIZE)
 
         print(f"Uploading predictions to Laeblbox Model Run {lb_model_run.uid}")
         task = lb_model_run.add_predictions("upload predictions", predictions)
@@ -406,7 +406,7 @@ if __name__ == "__main__":
 
         print("Done")
         lb_model_run.update_status("COMPLETE")
-        tf_model.save(args.MODEL_SAVE_DIR)
+        tf_model.save("gs://"+args.MODEL_SAVE_DIR+".h5")
         
     except Exception as e:
         lb_model_run.update_status("FAILED")
