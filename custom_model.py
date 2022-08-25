@@ -397,7 +397,6 @@ if __name__ == "__main__":
         tf_history = tf_model.fit(train_data, epochs=args.EPOCHS)
 
         print("Model training complete. Creating predictions with trained model...")
-        data_by_split = {"training": x_train, "validation": x_val, "test": x_test}
         predictions = get_predictions(tf_model, data_row_id_input, lb_ontology_index, label_decoder, args.BATCH_SIZE)
 
         print(f"Uploading predictions to Laeblbox Model Run {lb_model_run.uid}")
