@@ -404,17 +404,16 @@ if __name__ == "__main__":
         print(f"Uploading predictions to Laeblbox Model Run {lb_model_run.uid}")
         task = lb_model_run.add_predictions("upload predictions", predictions)
         print("prediction task errors:", task.errors)
-
-        print("Done")
-        lb_model_run.update_status("COMPLETE")
         
-        tmp_save_name = "/tmp/model.h5"
         bucket_save_name = "gs://"+args.MODEL_SAVE_DIR+"/"+args.MODEL_NAME+"_"+args.LB_MODEL_RUN_ID+".h5"
+        print(f"Saving model as{bucket_save_name}") 
         tf_model.save(tmp_save_name)
-        
-        with file_io.FileIO(tmp_save_name, mode='rb') as i_f:
+        with file_io.FileIO("/tmp/model.h5", mode='rb') as i_f:
             with file_io.FileIO(bucket_save_name, mode='wb+') as o_f:
                 o_f.write(i_f.read())
+                
+        lb_model_run.update_status("COMPLETE")
+        print("Done")
         
     except Exception as e:
         lb_model_run.update_status("FAILED")
