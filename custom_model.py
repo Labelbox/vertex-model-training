@@ -19,6 +19,7 @@ import uuid
 import argparse
 import os
 import sys
+import datetime
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--LB_API_KEY', dest='LB_API_KEY', type=str, help='Labelbox API KEY')
@@ -28,6 +29,7 @@ parser.add_argument('--EPOCHS', dest='EPOCHS', type=int, default=5, help='Number
 parser.add_argument('--BATCH_SIZE', dest='BATCH_SIZE', type=int, default=16, help='Training batch size.')
 parser.add_argument('--DISTRIBUTE', dest='DISTRIBUTE', type=str, default='single', help='Which distributed training strategy to use in container generated.')
 parser.add_argument('--MODEL_SAVE_DIR', dest='MODEL_SAVE_DIR', type=str, help='Where to save the trained model')
+parser.add_argument('--MODEL_NAME', dest='MODEL_NAME', type=str, help='Where to save the trained model')
 
 args = parser.parse_args()
 
@@ -405,7 +407,9 @@ if __name__ == "__main__":
 
         print("Done")
         lb_model_run.update_status("COMPLETE")
-        tf_model.save("gs://"+args.MODEL_SAVE_DIR+".h5")
+        x = datetime.datetime.now()
+        timestamp = f'{x.year}-{x.month}-{x.day}_{x.hour}:{x.minute}:{x.second}'
+        tf_model.save("gs://"+args.MODEL_SAVE_DIR+"/"+args.MODEL_NAME+timestamp+".h5")
         
     except Exception as e:
         lb_model_run.update_status("FAILED")
