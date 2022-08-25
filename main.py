@@ -312,6 +312,7 @@ def model_run(request):
                 "--BATCH_SIZE=" + BATCH_SIZE,
                 "--DISTRIBUTE=" + DISTRIBUTE,
                 "--MODEL_SAVE_DIR=" + MODEL_SAVE_DIR
+                "--MODEL_NAME=" + MODEL_NAME
             ]
 
             # Execute custom job
