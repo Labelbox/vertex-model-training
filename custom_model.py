@@ -90,7 +90,7 @@ def build_model(num_classes):
     model.compile(
         loss=tf.keras.losses.CategoricalCrossentropy(),
         optimizer=tf.keras.optimizers.Adam(),
-        metrics=tf.keras.metrics.Accuracy()
+        metrics=[tf.keras.metrics.Accuracy()]
     )
     return model
 
